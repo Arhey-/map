@@ -1,0 +1,311 @@
+<html>
+  <head>
+    <title>map</title>
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <style>
+      body { background-color: #222; color: #ccc }
+      a { color: #39c; text-decoration: none; }
+      ul { padding-left: 1em; }
+      .tool { position: sticky; bottom: 0; background-color: rgba(0, 0, 0, 0.7); }
+      .wide { width: 100% }
+    </style>
+  </head>
+  <body>
+    <script type='module'>
+      import { html, select, fold } from '../lib/html.js'
+
+      const user = localStorage.bitbucketWorkspace;
+      const auth = localStorage.bitbucketAppPwd;
+      const id = localStorage.bitbucketSnippetId;
+      const snippetUrl = `https://api.bitbucket.org/2.0/snippets/${user}/${id}`
+      const headers = { 'Authorization': 'Basic ' + btoa(user + ':' + auth) };
+      const loadedFiles = new Map, changedFiles = new Set, arrByUl = new Map;
+      
+      if (!user || !auth || !id) {
+        editCredentials();
+      } else try {
+        const n = new URL(location).searchParams.get('file') || 'index'
+        const root = await get(n);
+        document.addEventListener('click', handlePlace);
+        document.body.append(sub(root.arr, n));
+        actions();
+      } catch (e) {
+        editCredentials(e);
+      }
+      
+      async function get(name) {
+        const r = await fetch(`${snippetUrl}/files/${name}.json`, { headers });
+        if (!r.ok) throw r.status;
+        const f = await r.json();
+        loadedFiles.set(name, f);
+        return f;
+      }
+
+      async function put(name) {
+        if (name) changedFiles.add(name)
+        if (!changedFiles.size || actions.batch.checked) {
+          return;
+        }
+        const uploadNames = [...changedFiles]
+        const r = await fetch(snippetUrl, {
+          method: 'PUT',
+          headers,
+          body: makeFilesForm(uploadNames),
+        });
+        if (!r.ok) throw r.status;
+        uploadNames.forEach(n => changedFiles.delete(n))
+        return r
+      }
+
+      function makeFilesForm(names) {
+        const form = new FormData
+        for (const name of names) {
+          const f = makeFile(name)
+          form.append('file', f, f.name); //todo same name?
+        }
+        return form
+      }
+
+      function makeFile(name) {
+        const obj = loadedFiles.get(name)
+        const json = JSON.stringify(obj, null, 1)
+        return new File([json], name + '.json', { type: "text/json" })
+      }
+
+      function sub(arr, ofFile) {
+        const ul = html.ul(...arr.map(build))
+        if (ofFile) ul.style.setProperty('--file', ofFile)
+        arrByUl.set(ul, arr)
+        return ul
+      }
+
+      function build(i) {
+        if (i.file) {
+          const b = html.button(() => fileLoader(i.file, b), i.name);
+          const a = html.a({ target: '_blank', href: '?file=' + i.file }, ' tab');
+          return html.li(b, a);
+        }
+        const title = !i.url ? i.name : html.a({
+          target: '_blank',
+          href: i.url,
+        }, i.name)
+        if (i.fold && i.arr) {
+          return html.li(fold(title, sub(i.arr)))
+        }
+        const li = html.li(title);
+        if (i.arr) li.append(sub(i.arr));
+        return li;
+      }
+
+      function fileLoader(name, button) {
+        if (actions.active) return;
+        button.disabled = true;
+        get(name)
+          .then(f => button.after(sub(f.arr, name)))
+          .catch(e => {
+            button.disabled = false;
+            document.body.prepend(e);
+          });
+      }
+
+      const bmks = "addEventListener('focus',()=>navigator.clipboard.writeText(JSON.stringify({name:document.title, url:location.href})),{once:true})";
+      
+      function actions(){
+        const bkm = html.button(() => navigator.clipboard.writeText(bmks), 'bkm')
+        const add = html.button(adding, 'add')
+        const sub = html.input({ type: 'checkbox' })
+        const fold = html.input({ type: 'checkbox' })
+        const rm = html.input({ type: 'checkbox' })
+        const mv = html.input({ type: 'checkbox' })
+        const batch = html.input({ type: 'checkbox', onchange: () => {
+          //todo better ui
+          if (!batch.checked) put()
+            .then(() => alert('ok'))
+            .catch(e => alert('err: ' + e))
+        } })
+        document.body.append(
+          html.div({ className: 'tool' }, html.div(
+            bkm,
+            add,
+            html.label(sub, 'sub'),
+            html.label(fold, 'fold'),
+            html.label(rm, 'rm'),
+            html.label(mv, 'mv'),
+            html.label(batch, 'batch')
+          ))
+        )
+        Object.assign(actions, { sub, fold, rm, mv, batch })
+      }
+
+      Object.defineProperty(actions, 'active', {
+        get: () => adding.name_?.value ||
+          ['sub', 'fold', 'rm', 'mv'].some(a => actions[a].checked)
+      })
+
+      function adding() {
+        if (adding.name_) return;
+        const name = html.input({ placeholder: 'name', className: 'wide', onfocus: () => {
+          if (!name.value) navigator.clipboard.readText().then(n => {
+            if (n.startsWith('{')) {
+              name.value = n
+              name.onchange()
+              navigator.clipboard.writeText('')
+            }
+          })
+        } })
+        name.onchange = () => {
+          if (name.value.startsWith('{"name":"')) {
+            const i = JSON.parse(name.value)
+            name.value = i.name;
+            url.value = i.url;
+          }
+        }
+        const url = html.input({ placeholder: 'url', className: 'wide' })
+        document.body
+          .querySelector('.tool')
+          .prepend(name, url)
+        adding.name_ = name;
+        adding.url = url;
+      }
+
+      function handlePlace(e) {
+        if (!actions.active) return;
+        const file = getComputedStyle(e.target).getPropertyValue('--file')
+        if (!file) return;
+        if (e.target.tagName == 'UL') {
+          alert('tap on list item')
+          return
+        }
+        e.preventDefault()
+        e.stopPropagation()
+        if (actions.sub.checked) {
+          syncSub(e.target, file)
+        } else if (actions.fold.checked) {
+          syncFold(e.target, file)
+        } else if (actions.rm.checked || actions.mv.checked && !lastDel) {
+          syncRm(e.target, file)
+        } else if (actions.mv.checked) {
+          syncMv(e.target, file)
+        } else {
+          syncAdd(e.target, file, adding.name_.value, adding.url.value);
+          adding.name_.value = adding.url.value = '';
+        }
+      }
+    
+      function syncAdd(target, file, name, url) {
+        const i = { name };
+        if (url) i.url = url;
+
+        const [arr, n, li] = targets(target)
+        arr.splice(n, 0, i)
+
+        put(file)
+          .then(() => li.before(build(i)))
+          .catch(alert)
+      }
+
+      async function syncMv(target, file) {
+        const [arr, n, li] = targets(target)
+        arr.splice(n, 0, lastDel)
+        try {
+          await put(file)
+          li.before(lastElDel)
+          lastDel = null
+        } catch (e){
+          alert(e)
+        }
+      }
+
+      let lastDel, lastElDel
+
+      async function syncRm(target, file) {
+        const [arr, n, li] = targets(target)
+        if (!confirm(`rm ${arr[n].name} ?`)) return;
+        [lastDel] = arr.splice(n, 1)
+        try {
+          await put(file)
+          li.remove()
+          lastElDel = li
+        } catch (e) {
+          lastDel = null;
+          alert(e)
+        }
+      }
+
+      function syncFold(target, file) {
+        const [arr, n, li] = targets(target)
+        const i = arr[n];
+        if (!i.arr) return alert('this is no list')
+        if (i.fold) return alert('alredy folded')
+        i.fold = true
+        put(file)
+          .then(() => li.append(fold(li.firstChild, li.querySelector('ul'))))
+      }
+
+      async function syncSub(target, file) {
+        const [arr, n, li] = targets(target)
+        const p = arr[n - 1];
+        if (!p) return alert('no prev')
+        if (p.file) return alert('file cannot be prev, use move')
+        const prevLi = li.previousElementSibling
+        li.remove()
+        const prevWasList = p.arr
+        if (prevWasList) {
+          p.arr.push(arr[n])
+        } else {
+          p.arr = [arr[n]]
+        }
+        arr.splice(n, 1)
+        try {
+          await put(file)
+        } catch {
+          arr.splice(n, 0, p.arr.pop())
+          if (!prevWasList) delete p.arr
+          prevLi.after(li)
+        }
+        if (prevWasList) {
+          prevLi.querySelector('ul').append(li)
+        } else {
+          const ul = html.ul(li)
+          prevLi.append(ul)
+          arrByUl.set(ul, p.arr)
+        }
+      }
+
+      function targets(el) {
+        const li = el.tagName == 'LI'
+          ? el
+          : findParent('LI', el)
+        const ul = findParent('UL', li)
+        const arr = arrByUl.get(ul)
+        const n = Array.from(ul.children).findIndex(i => i == li)
+        return [arr, n, li]
+      }
+
+      function findParent(name, el) {
+        while (el = el.parentElement) {
+          if (el.tagName == name) return el 
+        }
+      }
+
+      function editCredentials(error = '') {
+        document.body.innerHTML = `<p>${error}</p>`;
+        document.body.append(
+          input('Workspace', user),
+          input('SnippetId', id),
+          input('AppPwd', auth),
+          html.p('enter correct bitbucket creds and reload')
+        );
+      }
+
+      function input(name, value = '') {
+        const i = html.input({
+          type: 'text',
+          value,
+          onchange: () => localStorage.setItem('bitbucket' + name, i.value),
+        });
+        return html.p(html.label(name, i));
+      }
+    </script>
+  </body>
+</html>
