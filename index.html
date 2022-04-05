@@ -15,6 +15,7 @@
   <body>
     <script type='module'>
       import { html, select, fold } from '../lib/html.js'
+      import { bookmarklet } from '../bookmarklet.js'
 
       const user = localStorage.bitbucketWorkspace;
       const auth = localStorage.bitbucketAppPwd;
@@ -110,10 +111,8 @@
           });
       }
 
-      const bmks = "addEventListener('focus',()=>navigator.clipboard.writeText(JSON.stringify({name:document.title, url:location.href})),{once:true})";
       
       function actions(){
-        const bkm = html.button(() => navigator.clipboard.writeText(bmks), 'bkm')
         const add = html.button(adding, 'add')
         const sub = html.input({ type: 'checkbox' })
         const fold = html.input({ type: 'checkbox' })
@@ -127,7 +126,6 @@
         } })
         document.body.append(
           html.div({ className: 'tool' }, html.div(
-            bkm,
             add,
             html.label(sub, 'sub'),
             html.label(fold, 'fold'),
@@ -146,7 +144,7 @@
 
       function adding() {
         if (adding.name_) return;
-        const name = html.input({ placeholder: 'name', className: 'wide', onfocus: () => {
+        const name = html.input({ placeholder: 'name or .bkm', className: 'wide', onfocus: () => {
           if (!name.value) navigator.clipboard.readText().then(n => {
             if (n.startsWith('{')) {
               name.value = n
@@ -156,6 +154,10 @@
           })
         } })
         name.onchange = () => {
+          if (name.value == '.bkm') {
+            navigator.clipboard.writeText(bookmarklet).then(() => name.value = '')
+            return;
+          }
           if (name.value.startsWith('{"name":"')) {
             const i = JSON.parse(name.value)
             name.value = i.name;
