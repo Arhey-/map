@@ -5,6 +5,7 @@
     <style>
       body { background-color: #222; color: #ccc }
       a { color: #39c; text-decoration: none; }
+      a:hover { color: #6cf; }
       ul { padding-left: 1em; }
       li::marker { color: rgba(255,255,255,0.3); }
       summary { margin-left: -1em; }
@@ -22,7 +23,9 @@
       const id = localStorage.bitbucketSnippetId;
       const snippetUrl = `https://api.bitbucket.org/2.0/snippets/${user}/${id}`
       const headers = { 'Authorization': 'Basic ' + btoa(user + ':' + auth) };
-      const loadedFiles = new Map, changedFiles = new Set, arrByUl = new Map;
+      const isMobile = navigator.userAgent.includes('obile');
+      const loadedFiles = new Map, changedFiles = new Set;
+      const arrByUl = new Map;
       
       if (!user || !auth || !id) {
         editCredentials();
@@ -224,7 +227,7 @@
 
       async function syncRm(target, file) {
         const [arr, n, li] = targets(target)
-        if (!confirm(`rm ${arr[n].name} ?`)) return;
+        if (isMobile && !confirm(`rm ${arr[n].name} ?`)) return;
         [lastDel] = arr.splice(n, 1)
         try {
           await put(file)
