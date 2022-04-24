@@ -26,6 +26,9 @@
       const isMobile = navigator.userAgent.includes('obile');
       const loadedFiles = new Map, changedFiles = new Set;
       const arrByUl = new Map;
+      const tool = {
+        get active() { return adding.name_?.value || tool.action.value }
+      };
       
       if (!user || !auth || !id) {
         editCredentials();
@@ -114,12 +117,6 @@
           });
       }
 
-      
-      const tool = {
-        get active() {
-          return adding.name_?.value || tool.action.value
-        }
-      };
 
       function makeTool(){
         const add = html.button(adding, 'add')
