@@ -129,11 +129,11 @@
         tool.action = action
 
         const batch = html.input({ type: 'checkbox', onchange: () => {
-          //todo better ui
+          action.onchange();
           if (batch.checked) return;
           action.value = ''
           put()
-            .then(() => alert('ok'))
+            .then(() => alert('ok')) //todo better ui
             .catch(e => alert('err: ' + e))
         } })
         tool.batch = batch
