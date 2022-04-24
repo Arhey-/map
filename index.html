@@ -34,7 +34,7 @@
         const root = await get(n);
         document.addEventListener('click', handlePlace);
         document.body.append(sub(root.arr, n));
-        actions();
+        makeTool();
       } catch (e) {
         editCredentials(e);
       }
@@ -49,7 +49,7 @@
 
       async function put(name) {
         if (name) changedFiles.add(name)
-        if (!changedFiles.size || actions.batch.checked) {
+        if (!changedFiles.size || tool.batch.checked) {
           return;
         }
         const uploadNames = [...changedFiles]
@@ -104,7 +104,7 @@
       }
 
       function fileLoader(name, button) {
-        if (actions.active) return;
+        if (tool.active) return;
         button.disabled = true;
         get(name)
           .then(f => button.after(sub(f.arr, name)))
@@ -115,35 +115,32 @@
       }
 
       
-      function actions(){
+      const tool = {
+        get active() {
+          return adding.name_?.value || tool.action.value
+        }
+      };
+
+      function makeTool(){
         const add = html.button(adding, 'add')
-        const sub = html.input({ type: 'checkbox' })
-        const fold = html.input({ type: 'checkbox' })
-        const rm = html.input({ type: 'checkbox' })
-        const mv = html.input({ type: 'checkbox' })
+        tool.action = select(['', 'action'], 'sub', 'fold', 'rm', 'mv')
         const batch = html.input({ type: 'checkbox', onchange: () => {
           //todo better ui
-          if (!batch.checked) put()
+          if (batch.checked) return;
+          tool.action.value = ''
+          put()
             .then(() => alert('ok'))
             .catch(e => alert('err: ' + e))
         } })
         document.body.append(
           html.div({ className: 'tool' }, html.div(
             add,
-            html.label(sub, 'sub'),
-            html.label(fold, 'fold'),
-            html.label(rm, 'rm'),
-            html.label(mv, 'mv'),
+            tool.action,
             html.label(batch, 'batch')
           ))
         )
-        Object.assign(actions, { sub, fold, rm, mv, batch })
+        tool.batch = batch
       }
-
-      Object.defineProperty(actions, 'active', {
-        get: () => adding.name_?.value ||
-          ['sub', 'fold', 'rm', 'mv'].some(a => actions[a].checked)
-      })
 
       function adding() {
         if (adding.name_) return;
@@ -176,7 +173,7 @@
       }
 
       function handlePlace(e) {
-        if (!actions.active) return;
+        if (!tool.active) return;
         const file = getComputedStyle(e.target).getPropertyValue('--file')
         if (!file) return;
         if (e.target.tagName == 'UL') {
@@ -185,18 +182,16 @@
         }
         e.preventDefault()
         e.stopPropagation()
-        if (actions.sub.checked) {
-          syncSub(e.target, file)
-        } else if (actions.fold.checked) {
-          syncFold(e.target, file)
-        } else if (actions.rm.checked || actions.mv.checked && !lastDel) {
-          syncRm(e.target, file)
-        } else if (actions.mv.checked) {
-          syncMv(e.target, file)
-        } else {
-          syncAdd(e.target, file, adding.name_.value, adding.url.value);
-          adding.name_.value = adding.url.value = '';
+        const action = tool.action.value
+        if ('sub' == action) return syncSub(e.target, file)
+        if ('fold' == action) return syncFold(e.target, file)
+        if ('rm' == action || action == 'mv' && !lastDel) {
+          syncRm(e.target, file); return
         }
+        if ('mv' == action) return syncMv(e.target, file)
+
+        syncAdd(e.target, file, adding.name_.value, adding.url.value);
+        adding.name_.value = adding.url.value = '';
       }
     
       function syncAdd(target, file, name, url) {
