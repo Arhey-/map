@@ -3,7 +3,8 @@
     <title>map</title>
     <meta content="width=device-width, initial-scale=1" name="viewport" />
     <style>
-      body { background-color: #222; color: #ccc }
+      body { background-color: #222; color: #ccc; }
+      .edit-mode li { padding: 0.1em 0; }
       a { color: #39c; text-decoration: none; }
       a:hover { color: #6cf; }
       ul { padding-left: 1em; }
@@ -120,23 +121,30 @@
 
       function makeTool(){
         const add = html.button(adding, 'add')
-        tool.action = select([['', 'action'], 'sub', 'fold', 'rm', 'mv'])
+
+        const action = select([['', 'action'], 'sub', 'fold', 'rm', 'mv'])
+        if (isMobile) action.onchange = () => {
+          document.body.classList.toggle('edit-mode', action.value)
+        }
+        tool.action = action
+
         const batch = html.input({ type: 'checkbox', onchange: () => {
           //todo better ui
           if (batch.checked) return;
-          tool.action.value = ''
+          action.value = ''
           put()
             .then(() => alert('ok'))
             .catch(e => alert('err: ' + e))
         } })
+        tool.batch = batch
+
         document.body.append(
           html.div({ className: 'tool' }, html.div(
             add,
-            tool.action,
+            action,
             html.label(batch, 'batch')
           ))
         )
-        tool.batch = batch
       }
 
       function adding() {
