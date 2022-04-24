@@ -120,7 +120,7 @@
 
       function makeTool(){
         const add = html.button(adding, 'add')
-        tool.action = select(['', 'action'], 'sub', 'fold', 'rm', 'mv')
+        tool.action = select([['', 'action'], 'sub', 'fold', 'rm', 'mv'])
         const batch = html.input({ type: 'checkbox', onchange: () => {
           //todo better ui
           if (batch.checked) return;
