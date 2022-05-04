@@ -18,6 +18,25 @@
       }
       .tool label { margin: 0 0.5em }
       .wide { width: 100% }
+
+      .spin { position: fixed; top: 0; right: 0; }
+      .spin:after {
+        content: " "; display: block;
+        width: 20px; height: 20px; margin: 10px;
+        border-radius: 50%;
+        border: 6px solid #fff;
+        border-color: #39c transparent #39c transparent;
+        animation: lds-dual-ring 1.5s linear infinite;
+      }
+      @keyframes lds-dual-ring {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
     </style>
   </head>
   <body>
@@ -62,12 +81,13 @@
         if (!changedFiles.size || tool.batch.checked) {
           return;
         }
+        const spin = document.body.appendChild(html.div({ className: 'spin' }))
         const uploadNames = [...changedFiles]
         const r = await fetch(snippetUrl, {
           method: 'PUT',
           headers,
           body: makeFilesForm(uploadNames),
-        });
+        }).finally(() => spin.remove());
         if (!r.ok) throw r.status;
         uploadNames.forEach(n => changedFiles.delete(n))
         return r
