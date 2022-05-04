@@ -19,6 +19,8 @@
       .tool label { margin: 0 0.5em }
       .wide { width: 100% }
 
+      dialog::backdrop { background: rgba(0, 0, 0, 0.9); }
+
       .spin { position: fixed; top: 0; right: 0; }
       .spin:after {
         content: " "; display: block;
@@ -148,7 +150,7 @@
       function makeTool(){
         const add = html.button(adding, 'add')
 
-        const action = select([['', 'action'], 'sub', 'fold', 'rm', 'mv'])
+        const action = select([['', 'action'], 'sub', 'fold', 'rm', 'mv', 'focus'])
         if (isMobile) action.onchange = () => {
           document.body.classList.toggle('edit-mode', action.value)
         }
@@ -212,6 +214,7 @@
         e.preventDefault()
         e.stopPropagation()
         const action = tool.action.value
+        if ('focus' == action) return focus(e.target)
         if ('sub' == action) return syncSub(e.target, file)
         if ('fold' == action) return syncFold(e.target, file)
         if ('rm' == action || action == 'mv' && !lastDel) {
@@ -301,6 +304,13 @@
           prevLi.append(ul)
           arrByUl.set(ul, p.arr)
         }
+      }
+
+      function focus(el) {
+        const li = el.tagName == 'LI' ? el : findParent('LI', el)
+        if (li) document.body
+          .appendChild(html.dialog(li.cloneNode(true)))
+          .showModal()
       }
 
       function targets(el) {
