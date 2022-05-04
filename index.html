@@ -158,9 +158,7 @@
           if (batch.checked) return;
           action.value = ''
           action.onchange?.()
-          put()
-            .then(() => alert('ok')) //todo better ui
-            .catch(e => alert('err: ' + e))
+          put().catch(e => alert('err: ' + e))
         } })
         tool.batch = batch
 
