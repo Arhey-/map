@@ -2,9 +2,10 @@
   <head>
     <title>map</title>
     <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta name="color-scheme" content="dark light">
     <style>
       body { background-color: #222; color: #ccc; }
-      .edit-mode li { padding: 0.1em 0; }
+      .edit-mode li { padding: 0.15em 0; }
       a { color: #39c; text-decoration: none; }
       a:hover { color: #6cf; }
       ul { padding-left: 1em; }
@@ -129,9 +130,9 @@
         tool.action = action
 
         const batch = html.input({ type: 'checkbox', onchange: () => {
-          action.onchange();
           if (batch.checked) return;
           action.value = ''
+          action.onchange?.()
           put()
             .then(() => alert('ok')) //todo better ui
             .catch(e => alert('err: ' + e))
@@ -227,7 +228,7 @@
 
       async function syncRm(target, file) {
         const [arr, n, li] = targets(target)
-        if (isMobile && !confirm(`rm ${arr[n].name} ?`)) return;
+        if (!tool.batch.checked && !confirm(`rm ${arr[n].name} ?`)) return;
         [lastDel] = arr.splice(n, 1)
         try {
           await put(file)
