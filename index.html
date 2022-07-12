@@ -53,6 +53,8 @@
       const snippetUrl = `https://api.bitbucket.org/2.0/snippets/${user}/${id}`
       const headers = { 'Authorization': 'Basic ' + btoa(user + ':' + auth) };
       const isMobile = navigator.userAgent.includes('obile');
+      const query = new URL(location).searchParams;
+      const openFileTarget = query.get('target') || '_blank';
       const loadedFiles = new Map, changedFiles = new Set;
       const arrByUl = new Map;
       const tool = {
@@ -62,7 +64,7 @@
       if (!user || !auth || !id) {
         editCredentials();
       } else try {
-        const n = new URL(location).searchParams.get('file') || 'index'
+        const n = query.get('file') || 'index'
         const root = await get(n);
         document.addEventListener('click', handlePlace);
         document.body.append(sub(root.arr, n));
@@ -121,7 +123,7 @@
       function build(i) {
         if (i.file) {
           const b = html.button(() => fileLoader(i.file, b), i.name);
-          const a = html.a({ target: '_blank', href: '?file=' + i.file }, ' tab');
+          const a = html.a({ target: openFileTarget, href: '?file=' + i.file }, ' open');
           return html.li(b, a);
         }
         const title = !i.url ? i.name : html.a({
