@@ -22,7 +22,10 @@
 	<iframe name="right-side"></iframe>
 	<script>
 		const r = new URL(location).searchParams.get('right')
-		if (r) frames['right-side'].location.href = '/map/?file=' + r;
+		if (r) {
+			frames['right-side'].location.href = '/map/?file=' + r;
+			document.title += ` - ${r}`;
+		}
 	</script>
 </body>
 
