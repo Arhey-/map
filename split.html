@@ -6,6 +6,13 @@
 		body {
 			margin: 0;
 			display: flex;
+			background-color: #111;
+		}
+
+		iframe {
+			border: 0;
+			margin: 1px;
+			flex-grow: 1;
 		}
 	</style>
 </head>
@@ -13,6 +20,10 @@
 <body>
 	<iframe src="/map/?target=right-side"></iframe>
 	<iframe name="right-side"></iframe>
+	<script>
+		const r = new URL(location).searchParams.get('right')
+		if (r) frames['right-side'].location.href = '/map/?file=' + r;
+	</script>
 </body>
 
 </html>
