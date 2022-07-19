@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg">
-	<line x1="0" y1="0" x2="100" y2="10" stroke="blue" />
-	<line x1="50" y1="25" x2="100" y2="20" stroke="green" />
-	<line x1="0" y1="0" x2="100" y2="50" stroke="yellow" />
-	<line x1="0" y1="0" x2="100" y2="100" stroke="white" />
-	<line x1="50" y1="50" x2="100" y2="75" stroke="gray" />
-	<line x1="50" y1="50" x2="50" y2="100" stroke="gray" />
+	<line x1="0" y1="0" x2="100" y2="10" stroke="blue" stroke-width="4" />
+	<line x1="50" y1="25" x2="100" y2="20" stroke="green" stroke-width="4" />
+	<line x1="0" y1="0" x2="100" y2="50" stroke="yellow" stroke-width="4" />
+	<line x1="0" y1="0" x2="100" y2="100" stroke="white" stroke-width="4" />
+	<line x1="50" y1="50" x2="100" y2="75" stroke="gray" stroke-width="4" />
+	<line x1="50" y1="50" x2="50" y2="100" stroke="gray" stroke-width="4" />
 </svg>
