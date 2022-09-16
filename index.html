@@ -70,6 +70,17 @@
         document.addEventListener('click', handlePlace);
         document.body.append(sub(root.arr, n));
         makeTool();
+
+//todo fn
+document.addEventListener('keydown',e=>{
+const { nodeName } = e.target;
+if (
+nodeName != 'INPUT'
+&& 'TEXTAREA' != nodeName
+&& e.code='KeyK'
+&& e.metaKey
+) tool.action.focus()
+})
       } catch (e) {
         editCredentials(e);
       }
