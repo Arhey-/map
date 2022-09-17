@@ -44,6 +44,16 @@
     </style>
   </head>
   <body>
+  <script>
+	addEventListener('error', function (e) {
+		e = e || 'undefined error';
+		var name = e.name || e.code,
+			m = e.message || e;
+		if (name) name += ': ';
+		alert(name + m);
+	})
+  </script>
+
     <script type='module'>
       import { html, select, fold } from '../lib/html.js'
       import { bookmarklet } from './bookmarklet.js'
@@ -77,7 +87,7 @@ const { nodeName } = e.target;
 if (
 nodeName != 'INPUT'
 && 'TEXTAREA' != nodeName
-&& e.code='KeyK'
+&& e.code=='KeyK'
 && e.metaKey
 ) tool.action.focus()
 })
