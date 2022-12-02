@@ -65,6 +65,7 @@
       const headers = { 'Authorization': 'Basic ' + btoa(user + ':' + auth) };
       const isMobile = navigator.userAgent.includes('obile');
       const query = new URL(location).searchParams;
+      const isLoadRefsOnStart = query.has('load-refs');
       const openFileTarget = query.get('target') || '_blank';
       const loadedFiles = new Map, changedFiles = new Set;
       const arrByUl = new Map;
@@ -80,17 +81,7 @@
         document.addEventListener('click', handlePlace);
         document.body.append(sub(root.arr, n));
         makeTool();
-
-//todo fn
-document.addEventListener('keydown',e=>{
-const { nodeName } = e.target;
-if (
-nodeName != 'INPUT'
-&& 'TEXTAREA' != nodeName
-&& e.code=='KeyK'
-&& e.metaKey
-) tool.action.focus()
-})
+        document.addEventListener('keydown', handleKeys);
       } catch (e) {
         editCredentials(e);
       }
@@ -145,6 +136,7 @@ nodeName != 'INPUT'
       function build(i) {
         if (i.file) {
           const b = html.button(() => fileLoader(i.file, b), i.name);
+          if (isLoadRefsOnStart) setTimeout(() => fileLoader(i.file, b));
           const a = html.a({ target: openFileTarget, href: '?file=' + i.file }, ' open');
           return html.li(b, a);
         }
@@ -249,6 +241,16 @@ nodeName != 'INPUT'
 
         syncAdd(e.target, file, adding.name_.value, adding.url.value);
         adding.name_.value = adding.url.value = '';
+      }
+
+      function handleKeys(e) {
+        const { nodeName } = e.target;
+        if (
+          nodeName != 'INPUT'
+          && 'TEXTAREA' != nodeName
+          && e.code == 'KeyK'
+          && e.metaKey
+        ) tool.action.focus()
       }
     
       function syncAdd(target, file, name, url) {
