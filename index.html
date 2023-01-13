@@ -263,7 +263,7 @@
       }
     
       function syncAdd(target, file, name, url) {
-        const i = { name };
+        const i = { name, id: Date.now() };
         if (url) i.url = url;
 
         const [arr, n, li] = targets(target)
