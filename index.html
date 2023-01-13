@@ -11,6 +11,8 @@
       a:hover { color: #6cf; }
       ul { padding-left: 1em; }
       li::marker { color: rgba(255,255,255,0.3); }
+      li.yt { list-style-image: url(https://www.google.com/s2/favicons?domain=youtube.com); }
+      li.google { list-style-image: url(https://www.google.com/s2/favicons?domain=google.com); }
       summary { margin-left: -1em; }
       .tool {
         position: sticky; bottom: 0;
@@ -155,6 +157,8 @@
           return html.li(fold(title, sub(i.arr)))
         }
         const li = html.li(title);
+        if (i.url?.startsWith('https://www.youtube.com/')) li.classList.add('yt')
+        if (i.url?.startsWith('https://www.google.com/')) li.classList.add('google')
         if (i.arr) li.append(sub(i.arr));
         return li;
       }
