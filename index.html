@@ -63,6 +63,7 @@
       const id = localStorage.bitbucketSnippetId;
       const snippetUrl = `https://api.bitbucket.org/2.0/snippets/${user}/${id}`
       const headers = { 'Authorization': 'Basic ' + btoa(user + ':' + auth) };
+      let revision = '';
       const isMobile = navigator.userAgent.includes('obile');
       const query = new URL(location).searchParams;
       const isLoadRefsOnStart = query.has('load-refs');
@@ -87,8 +88,12 @@
       }
       
       async function get(name) {
-        const r = await fetch(`${snippetUrl}/files/${name}.json`, { headers });
+        const r = await fetch(`${snippetUrl}${revision}/files/${name}.json`, { headers });
         if (!r.ok) throw r.status;
+        if (r.redirected && r.url.startsWith(snippetUrl)) {
+          revision = r.url.replace(snippetUrl, '').replace(`/files/${name}.json`, '')
+          // TODO notify if revision
+        }
         const f = await r.json();
         loadedFiles.set(name, f);
         return f;
