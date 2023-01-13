@@ -174,7 +174,7 @@
       function makeTool(){
         const add = html.button(adding, 'add')
 
-        const action = select([['', 'action'], 'sub', 'fold', 'rm', 'mv', 'focus'])
+        const action = select([['', 'action'], 'edit', 'sub', 'fold', 'rm', 'mv', 'focus'])
         if (isMobile) action.onchange = () => {
           document.body.classList.toggle('edit-mode', tool.active)
         }
@@ -240,6 +240,7 @@
         e.stopPropagation()
         const action = tool.action.value
         if ('focus' == action) return focus(e.target)
+        if ('edit' == action) return syncEdit(e.target, file)
         if ('sub' == action) return syncSub(e.target, file)
         if ('fold' == action) return syncFold(e.target, file)
         if ('rm' == action || action == 'mv' && !lastDel) {
@@ -284,6 +285,17 @@
         } catch (e){
           alert(e)
         }
+      }
+
+      async function syncEdit(target, file) {
+        const [arr, n, li] = targets(target)
+        const i = arr[n];
+        if (!i.name) return alert('no name')
+        const up = prompt('name', i.name)
+        if (!up) return;
+        i.name = up;
+        await put(file);
+        li.replaceWith(build(i))
       }
 
       let lastDel, lastElDel
