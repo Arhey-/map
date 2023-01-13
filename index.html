@@ -176,7 +176,7 @@
 
         const action = select([['', 'action'], 'sub', 'fold', 'rm', 'mv', 'focus'])
         if (isMobile) action.onchange = () => {
-          document.body.classList.toggle('edit-mode', action.value)
+          document.body.classList.toggle('edit-mode', tool.active)
         }
         tool.action = action
 
@@ -217,6 +217,7 @@
             const i = JSON.parse(name.value)
             name.value = i.name;
             url.value = i.url;
+            tool.action.onchange?.()
           }
         }
         const url = html.input({ placeholder: 'url', className: 'wide' })
@@ -248,6 +249,7 @@
 
         syncAdd(e.target, file, adding.name_.value, adding.url.value);
         adding.name_.value = adding.url.value = '';
+        tool.action.onchange?.()
       }
 
       function handleKeys(e) {
