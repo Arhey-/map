@@ -83,6 +83,8 @@
         document.body.append(sub(root.arr, n));
         makeTool();
         document.addEventListener('keydown', handleKeys);
+        const ls = await fetch(snippetUrl, { headers }).then(r => r.json())
+        document.body.append(html.p(new Date(ls.updated_on).toLocaleString()))
       } catch (e) {
         editCredentials(e);
       }
