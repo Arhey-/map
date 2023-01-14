@@ -163,15 +163,19 @@
       return li;
     }
 
-    function fileLoader(name, button) {
+    async function fileLoader(name, button) {
       if (tool.active) return;
       button.disabled = true;
-      get(name)
-        .then(f => button.parentElement.append(sub(f.arr, name)))
-        .catch(e => {
-          button.disabled = false;
-          document.body.prepend(e);
-        });
+      try {
+        const i = await get(name)
+        const li = button.parentElement
+        const f = fold(li.children, sub(i.arr, name))
+        f.open = true;
+        li.append(f)
+      } catch (e) {
+        button.disabled = false;
+        document.body.prepend(e);
+      }
     }
 
 
