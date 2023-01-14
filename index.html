@@ -20,7 +20,7 @@
       display: flex; flex-wrap: wrap; justify-content: center;
       padding: 0.4rem 0;
     }
-    .tool label { margin: 0 0.5em }
+    .tool label, .tool button { margin: 0 0.5em }
     .wide { width: 100% }
 
     dialog::backdrop { background: rgba(0, 0, 0, 0.9); }
@@ -70,7 +70,7 @@
     const query = new URL(location).searchParams;
     const isLoadRefsOnStart = query.has('load-refs');
     const openFileTarget = query.get('target') || '_blank';
-    const loadedFiles = new Map, changedFiles = new Set;
+    const loadedFiles = new Map, changedFiles = new Set, existedFiles = new Set;
     const arrByUl = new Map;
     const tool = {
       get active() { return adding.name_?.value || tool.action.value }
@@ -95,10 +95,13 @@
       const s = await fetch(snippetUrl, { headers }).then(r => r.json())
       document.body.append(html.p(new Date(s.updated_on).toLocaleString()))
 
-      const links = Object.keys(s.files)
-        .map(n => n.replace('.json', ''))
-        .map(n => html.a({ target: openFileTarget, href: '?file=' + n }, n));
-      ls.append(html.ul(...links))
+      const lis = Object.keys(s.files).map(name => {
+        const n = name.replace('.json', '')
+        existedFiles.add(n)
+        const a = html.a({ target: openFileTarget, href: '?file=' + n }, n)
+        return html.li(a)
+      })
+      ls.append(html.ul(...lis))
       document.body.append(ls)
     }
 
@@ -191,7 +194,7 @@
 
 
     function makeTool() {
-      const action = select([['', 'action'], 'edit', 'sub', 'fold', 'rm', 'mv', 'focus'])
+      const action = select([['', 'action'], 'edit', 'sub', 'fold', 'rm', 'mv', 'file', 'focus'])
       if (isMobile) action.onchange = () => {
         document.body.classList.toggle('edit-mode', tool.active)
       }
@@ -266,6 +269,7 @@
       if ('edit' == action) return syncEdit(e.target, file)
       if ('sub' == action) return syncSub(e.target, file)
       if ('fold' == action) return syncFold(e.target, file)
+      if ('file' == action) return syncNewFile(e.target, file)
       if ('rm' == action || action == 'mv' && !lastDel) {
         syncRm(e.target, file); return
       }
@@ -298,6 +302,36 @@
         .catch(alert)
     }
 
+    async function syncEdit(target, file) {
+      const [arr, n, li] = targets(target)
+      const i = arr[n];
+      if (!i.name) return alert('no name')
+      const up = prompt('name', i.name)
+      if (!up) return;
+      i.name = up;
+      await put(file);
+      li.replaceWith(build(i))
+    }
+
+    async function syncNewFile(target, file) {
+      const [arr, n, li] = targets(target)
+      const i = arr[n];
+      if (!i.arr) return alert('no arr')
+      const f = prompt('name', i.name)
+      if (!f) return;
+      if (existedFiles.has(f)) return alert('alredy exist') // todo? renew?
+      if (i.url) i.arr.splice(0, 0, { name: i.name, url: i.url })
+      loadedFiles.set(f, { arr: i.arr })
+      changedFiles.add(f)
+      i.file = f;
+      delete i.fold;
+      delete i.arr;
+      delete i.url;
+      await put(file)
+      existedFiles.add(f)
+      li.replaceWith(build(i))
+    }
+
     async function syncMv(target, file) {
       const [arr, n, li] = targets(target)
       arr.splice(n, 0, lastDel)
@@ -308,17 +342,6 @@
       } catch (e) {
         alert(e)
       }
-    }
-
-    async function syncEdit(target, file) {
-      const [arr, n, li] = targets(target)
-      const i = arr[n];
-      if (!i.name) return alert('no name')
-      const up = prompt('name', i.name)
-      if (!up) return;
-      i.name = up;
-      await put(file);
-      li.replaceWith(build(i))
     }
 
     let lastDel, lastElDel
