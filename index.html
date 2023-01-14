@@ -75,6 +75,7 @@
     const tool = {
       get active() { return adding.name_?.value || tool.action.value }
     };
+    const ls = html.dialog(html.button(e => e.target.closest('dialog')?.close(), 'close'));
 
     if (!user || !auth || !id) {
       editCredentials();
@@ -85,10 +86,20 @@
       document.body.append(sub(root.arr, n));
       makeTool();
       document.addEventListener('keydown', handleKeys);
-      const ls = await fetch(snippetUrl, { headers }).then(r => r.json())
-      document.body.append(html.p(new Date(ls.updated_on).toLocaleString()))
+      await lsAndUpdated();
     } catch (e) {
       editCredentials(e);
+    }
+
+    async function lsAndUpdated(){
+      const s = await fetch(snippetUrl, { headers }).then(r => r.json())
+      document.body.append(html.p(new Date(s.updated_on).toLocaleString()))
+
+      const links = Object.keys(s.files)
+        .map(n => n.replace('.json', ''))
+        .map(n => html.a({ target: openFileTarget, href: '?file=' + n }, n));
+      ls.append(html.ul(...links))
+      document.body.append(ls)
     }
 
     async function get(name) {
@@ -180,8 +191,6 @@
 
 
     function makeTool() {
-      const add = html.button(adding, 'add')
-
       const action = select([['', 'action'], 'edit', 'sub', 'fold', 'rm', 'mv', 'focus'])
       if (isMobile) action.onchange = () => {
         document.body.classList.toggle('edit-mode', tool.active)
@@ -200,7 +209,8 @@
 
       document.body.append(
         html.div({ className: 'tool' },
-          add,
+          html.button(() => ls.showModal(), 'ls'),
+          html.button(adding, 'add'),
           html.label(batch, 'batch'),
           action
         )
