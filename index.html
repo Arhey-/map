@@ -167,7 +167,7 @@
       if (tool.active) return;
       button.disabled = true;
       get(name)
-        .then(f => button.after(sub(f.arr, name)))
+        .then(f => button.parentElement.append(sub(f.arr, name)))
         .catch(e => {
           button.disabled = false;
           document.body.prepend(e);
@@ -207,6 +207,7 @@
       if (adding.name_) return;
       const name = html.input({
         placeholder: 'name or .bkm', className: 'wide', onfocus: () => {
+          tool.action.value = '';
           if (!name.value) navigator.clipboard.readText().then(n => {
             if (n.startsWith('{')) {
               name.value = n
