@@ -75,7 +75,7 @@
     const tool = {
       get active() { return adding.name_?.value || tool.action.value }
     };
-    const ls = html.dialog(html.button(e => e.target.closest('dialog')?.close(), 'close'));
+    let updated, ls;
 
     if (!user || !auth || !id) {
       editCredentials();
@@ -93,16 +93,20 @@
 
     async function lsAndUpdated(){
       const s = await fetch(snippetUrl, { headers }).then(r => r.json())
-      document.body.append(html.p(new Date(s.updated_on).toLocaleString()))
+      updated ||= document.body.appendChild(html.p())
+      updated.textContent = new Date(s.updated_on).toLocaleString()
 
+      ls?.remove()
       const lis = Object.keys(s.files).map(name => {
         const n = name.replace('.json', '')
         existedFiles.add(n)
         const a = html.a({ target: openFileTarget, href: '?file=' + n }, n)
         return html.li(a)
       })
-      ls.append(html.ul(...lis))
-      document.body.append(ls)
+      ls = document.body.appendChild(html.dialog(
+        html.button(e => e.target.closest('dialog')?.close(), 'close'),
+        html.ul(...lis)
+      ))
     }
 
     async function get(name) {
@@ -131,6 +135,11 @@
       }).finally(() => spin.remove());
       if (!r.ok) throw r.status;
       uploadNames.forEach(n => changedFiles.delete(n))
+      revision = '';
+      if ('file' == tool.action.value) {
+        tool.action.value = ''
+      }
+      lsAndUpdated()
       return r
     }
 
@@ -212,7 +221,7 @@
 
       document.body.append(
         html.div({ className: 'tool' },
-          html.button(() => ls.showModal(), 'ls'),
+          html.button(() => ls?.showModal(), 'ls'),
           html.button(adding, 'add'),
           html.label(batch, 'batch'),
           action
