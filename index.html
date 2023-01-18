@@ -81,6 +81,7 @@
       editCredentials();
     } else try {
       const n = query.get('file') || 'index'
+      if (n != 'index') document.title += ` - ${n}`;
       const root = await get(n);
       document.addEventListener('click', handlePlace);
       document.body.append(sub(root.arr, n));
