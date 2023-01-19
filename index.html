@@ -13,6 +13,7 @@
     li::marker { color: rgba(255,255,255,0.3); }
     li.yt { list-style-image: url(https://www.google.com/s2/favicons?domain=youtube.com); }
     li.google { list-style-image: url(https://www.google.com/s2/favicons?domain=google.com); }
+    .hot { background-color: #600; }
     summary { margin-left: -1em; }
     .tool {
       position: sticky; bottom: 0;
@@ -20,7 +21,8 @@
       display: flex; flex-wrap: wrap; justify-content: center;
       padding: 0.4rem 0;
     }
-    .tool label, .tool button { margin: 0 0.5em }
+    .tool label, .tool button { margin: 0 0.4em }
+    .tool form { max-height: 3em; overflow: scroll; }
     .wide { width: 100% }
 
     .selected { border: 1px dashed; }
@@ -169,20 +171,22 @@
     }
 
     function build(i) {
+      const lOpts = {}
+      if (i.hot && i.hot < Date.now()) lOpts.className = 'hot' // todo dynamic
       if (i.file) {
         const b = html.button(() => fileLoader(i.file, b), i.name);
         if (isLoadRefsOnStart) setTimeout(() => fileLoader(i.file, b));
         const a = html.a({ target: openFileTarget, href: '?file=' + i.file }, ' open');
-        return html.li(b, a);
+        return html.li(lOpts, b, a);
       }
       const title = !i.url ? i.name : html.a({
         target: '_blank',
         href: i.url,
       }, i.name)
       if (i.fold && i.arr) {
-        return html.li(fold(title, sub(i.arr)))
+        return html.li(lOpts, fold(title, sub(i.arr)))
       }
-      const li = html.li(title);
+      const li = html.li(lOpts, title);
       if (i.url?.startsWith('https://www.youtube.com/')) li.classList.add('yt')
       if (i.url?.startsWith('https://www.google.com/')) li.classList.add('google')
       if (i.arr) li.append(sub(i.arr));
@@ -266,15 +270,17 @@
           name.value = i.name;
           url.value = i.url;
         }
-        url.hidden = !name.value;
+        url.hidden = hot.hidden = !name.value;
         tool.action.onchange()
       }
       const url = html.input({ placeholder: 'url', className: 'wide', hidden: true })
+      const hot = html.input({ type: 'date', hidden: true })
       document.body
         .querySelector('.tool')
-        .prepend(html.form({ className: 'wide' }, name, url))
+        .prepend(html.form({ className: 'wide' }, name, url, hot))
       adding.name_ = name;
       adding.url = url;
+      adding.hot = hot;
     }
 
     function handlePlace(e) {
@@ -298,8 +304,8 @@
       }
       if ('mv' == action) return syncMv(e.target, file)
 
-      syncAdd(e.target, file, adding.name_.value, adding.url.value);
-      adding.name_.value = adding.url.value = '';
+      syncAdd(e.target, file, adding.name_.value, adding.url.value, adding.hot.valueAsNumber);
+      adding.name_.form.reset()
       tool.action.onchange()
     }
 
@@ -322,12 +328,14 @@
       adding.name_.form.reset();
       adding.name_.value = i.name || '';
       adding.url.value = i.url || '';
+      if (i.hot) adding.hot.valueAsNumber = i.hot;
       tool.add.textContent = 'apply'
     }
 
-    function syncAdd(target, file, name, url) {
+    function syncAdd(target, file, name, url, hot) {
       const i = { name, id: Date.now() };
       if (url) i.url = url;
+      if (hot) i.hot = hot;
 
       const [arr, n, li] = targets(target)
       arr.splice(n, 0, i)
@@ -346,9 +354,11 @@
       const i = arr[n];
       const name = adding.name_.value;
       const url = adding.url.value;
+      const hot = adding.hot.valueAsNumber;
       // todo if no change return
       if (name) i.name = name; else delete i.name;
       if (url) i.url = url; else delete i.url;
+      if (hot) i.hot = hot; else delete i.hot;
       await put(file);
       li.replaceWith(build(i))
       s.classList.remove('selected')
