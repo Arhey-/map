@@ -6,7 +6,7 @@
   <link rel="icon" href="icon.svg">
   <style>
     body { background-color: #222; color: #ccc; }
-    .edit-mode li { padding: 0.15em 0; }
+    .edit-mode li { padding: 0.2em 0; }
     a { color: #39c; text-decoration: none; }
     a:hover { color: #6cf; }
     ul { padding-left: 1em; }
@@ -253,10 +253,11 @@
           const i = JSON.parse(name.value)
           name.value = i.name;
           url.value = i.url;
-          tool.action.onchange?.()
         }
+        url.hidden = !name.value;
+        tool.action.onchange?.()
       }
-      const url = html.input({ placeholder: 'url', className: 'wide' })
+      const url = html.input({ placeholder: 'url', className: 'wide', hidden: true })
       document.body
         .querySelector('.tool')
         .prepend(name, url)
