@@ -23,6 +23,8 @@
     .tool label, .tool button { margin: 0 0.5em }
     .wide { width: 100% }
 
+    .selected { border: 1px dashed; }
+
     dialog::backdrop { background: rgba(0, 0, 0, 0.9); }
 
     .spin { position: fixed; top: 0; right: 0; }
@@ -205,8 +207,15 @@
 
     function makeTool() {
       const action = select([['', 'action'], 'edit', 'sub', 'fold', 'rm', 'mv', 'file', 'focus'])
-      if (isMobile) action.onchange = () => {
-        document.body.classList.toggle('edit-mode', tool.active)
+       action.onchange = () => {
+         if (isMobile) document.body.classList.toggle('edit-mode', tool.active)
+         if (!action.value) {
+           const s = document.querySelector('.selected')
+	   if (!s) return;
+	   s.classList.remove('selected')
+           tool.add.textContent = 'add'
+           adding.name_?.form.reset()
+         }
       }
       tool.action = action
 
@@ -214,27 +223,30 @@
         type: 'checkbox', onchange: () => {
           if (batch.checked) return;
           action.value = ''
-          action.onchange?.()
+          action.onchange()
           put().catch(e => alert('err: ' + e))
         }
       })
       tool.batch = batch
 
-      document.body.append(
-        html.div({ className: 'tool' },
-          html.button(() => ls?.showModal(), 'ls'),
-          html.button(adding, 'add'),
-          html.label(batch, 'batch'),
-          action
-        )
+      tool.add = html.button(adding, 'add')
+      tool.el = html.div({ className: 'tool' },
+        html.button(() => ls?.showModal(), 'ls'),
+        tool.add,
+        html.label(batch, 'batch'),
+        action
       )
+      document.body.append(tool.el)
     }
 
     function adding() {
-      if (adding.name_) return;
+      if (adding.name_) {
+        if (tool.action.value == 'edit') syncEdit()
+        return
+      }
       const name = html.input({
         placeholder: 'name or .bkm', className: 'wide', onfocus: () => {
-          tool.action.value = '';
+          if (tool.action.value != 'edit') tool.action.value = '';
           if (!name.value) navigator.clipboard.readText().then(n => {
             if (n.startsWith('{')) {
               name.value = n
@@ -255,12 +267,12 @@
           url.value = i.url;
         }
         url.hidden = !name.value;
-        tool.action.onchange?.()
+        tool.action.onchange()
       }
       const url = html.input({ placeholder: 'url', className: 'wide', hidden: true })
       document.body
         .querySelector('.tool')
-        .prepend(name, url)
+        .prepend(html.form({ className: 'wide' }, name, url))
       adding.name_ = name;
       adding.url = url;
     }
@@ -277,7 +289,7 @@
       e.stopPropagation()
       const action = tool.action.value
       if ('focus' == action) return focus(e.target)
-      if ('edit' == action) return syncEdit(e.target, file)
+      if ('edit' == action) return selectForEditOrSkip(e.target)
       if ('sub' == action) return syncSub(e.target, file)
       if ('fold' == action) return syncFold(e.target, file)
       if ('file' == action) return syncNewFile(e.target, file)
@@ -288,7 +300,7 @@
 
       syncAdd(e.target, file, adding.name_.value, adding.url.value);
       adding.name_.value = adding.url.value = '';
-      tool.action.onchange?.()
+      tool.action.onchange()
     }
 
     function handleKeys(e) {
@@ -299,6 +311,18 @@
         && e.code == 'KeyK'
         && e.metaKey
       ) tool.action.focus()
+    }
+
+    function selectForEditOrSkip(target){
+      if(!adding.name_) adding()
+      document.querySelector('.selected')?.classList.remove('selected')
+      const [arr, n, li] = targets(target)
+      li.classList.add('selected')
+      const i = arr[n];
+      adding.name_.form.reset();
+      adding.name_.value = i.name || '';
+      adding.url.value = i.url || '';
+      tool.add.textContent = 'apply'
     }
 
     function syncAdd(target, file, name, url) {
@@ -313,15 +337,23 @@
         .catch(alert)
     }
 
-    async function syncEdit(target, file) {
-      const [arr, n, li] = targets(target)
+    async function syncEdit() {
+      const s = document.querySelector('.selected')
+      if (!s) return;
+      const file = getComputedStyle(s).getPropertyValue('--file')
+      if (!file) return;
+      const [arr, n, li] = targets(s)
       const i = arr[n];
-      if (!i.name) return alert('no name')
-      const up = prompt('name', i.name)
-      if (!up) return;
-      i.name = up;
+      const name = adding.name_.value;
+      const url = adding.url.value;
+      // todo if no change return
+      if (name) i.name = name; else delete i.name;
+      if (url) i.url = url; else delete i.url;
       await put(file);
       li.replaceWith(build(i))
+      s.classList.remove('selected')
+      tool.add.textContent = 'add'
+      adding.name_.form.reset()
     }
 
     async function syncNewFile(target, file) {
@@ -412,26 +444,18 @@
     }
 
     function focus(el) {
-      const li = el.tagName == 'LI' ? el : findParent('LI', el)
+      const li = el.closest('li')
       if (li) document.body
         .appendChild(html.dialog(li.cloneNode(true)))
         .showModal()
     }
 
     function targets(el) {
-      const li = el.tagName == 'LI'
-        ? el
-        : findParent('LI', el)
-      const ul = findParent('UL', li)
+      const li = el.closest('li')
+      const ul = li.closest('ul')
       const arr = arrByUl.get(ul)
       const n = Array.from(ul.children).findIndex(i => i == li)
       return [arr, n, li]
-    }
-
-    function findParent(name, el) {
-      while (el = el.parentElement) {
-        if (el.tagName == name) return el
-      }
     }
 
     function editCredentials(error = '') {
