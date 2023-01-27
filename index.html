@@ -96,7 +96,7 @@
       editCredentials(e);
     }
 
-    async function lsAndUpdated(){
+    async function lsAndUpdated() {
       const s = await fetch(snippetUrl, { headers }).then(r => r.json())
       updated ||= document.body.appendChild(html.p())
       updated.textContent = new Date(s.updated_on).toLocaleString()
@@ -211,15 +211,15 @@
 
     function makeTool() {
       const action = select([['', 'action'], 'edit', 'sub', 'fold', 'rm', 'mv', 'file', 'focus'])
-       action.onchange = () => {
-         if (isMobile) document.body.classList.toggle('edit-mode', tool.active)
-         if (!action.value) {
-           const s = document.querySelector('.selected')
-	   if (!s) return;
-	   s.classList.remove('selected')
-           tool.add.textContent = 'add'
-           adding.name_?.form.reset()
-         }
+      action.onchange = () => {
+        if (isMobile) document.body.classList.toggle('edit-mode', tool.active)
+        if (!action.value) {
+          const s = document.querySelector('.selected')
+          if (!s) return;
+          s.classList.remove('selected')
+          tool.add.textContent = 'add'
+          adding.name_?.form.reset()
+        }
       }
       tool.action = action
 
@@ -319,8 +319,8 @@
       ) tool.action.focus()
     }
 
-    function selectForEditOrSkip(target){
-      if(!adding.name_) adding()
+    function selectForEditOrSkip(target) {
+      if (!adding.name_) adding()
       document.querySelector('.selected')?.classList.remove('selected')
       const [arr, n, li] = targets(target)
       li.classList.add('selected')
