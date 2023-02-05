@@ -220,7 +220,7 @@
     function makeTool() {
       const action = select([['', 'action'], 'edit', 'sub', 'fold', 'rm', 'mv', 'file', 'focus'])
       action.onchange = () => {
-        if (isMobile) document.body.classList.toggle('edit-mode', tool.active)
+        if (isMobile) document.body.classList.toggle('edit-mode', tool.action.value)
         if (!action.value) {
           const s = document.querySelector('.selected')
           if (!s) return;
