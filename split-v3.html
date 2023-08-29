@@ -1,0 +1,34 @@
+<html>
+
+<head>
+	<title>split</title>
+	<link rel="icon" href="icon.svg">
+	<style>
+		body {
+			margin: 0;
+			display: flex;
+			background-color: #111;
+		}
+
+		iframe {
+			border: 0;
+			margin: 0 1px;
+			flex-grow: 1;
+		}
+	</style>
+</head>
+
+<body>
+	<iframe src="/map/?target=v2"></iframe>
+	<iframe name="v2"></iframe>
+	<iframe name="v3"></iframe>
+	<script>
+		const c = new URL(location).searchParams.get('v2')
+		const r = new URL(location).searchParams.get('v3')
+		if (c || r) document.title += ` - ${c || '_'} - ${r || '_'}`
+		if (c) frames['v2'].location.href = '/map/?file=' + c;
+		if (r) frames['v3'].location.href = '/map/?file=' + r;
+	</script>
+</body>
+
+</html>
