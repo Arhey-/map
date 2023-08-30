@@ -20,6 +20,12 @@
       background-color: rgba(0, 0, 0, 0.7);
       display: flex; flex-wrap: wrap; justify-content: center;
       padding: 0.4rem 0;
+
+      & li.move { 
+        pointer-events: none; 
+        max-height: 10vh;
+        overflow-y: scroll;
+      }
     }
     .tool label, .tool button { margin: 0 0.4em }
     .tool form { max-height: 3em; overflow: scroll; }
@@ -221,7 +227,9 @@
       const action = select([['', 'action'], 'edit', 'sub', 'fold', 'rm', 'mv', 'file', 'focus'])
       action.onchange = () => {
         if (isMobile) document.body.classList.toggle('edit-mode', tool.action.value)
-        if (!action.value) {
+        if (action.value) {
+          if (action.value == 'mv') batch.checked = true
+        } else {
           const s = document.querySelector('.selected')
           if (!s) return;
           s.classList.remove('selected')
@@ -330,7 +338,7 @@
     function selectForEditOrSkip(target) {
       if (!adding.name_) adding()
       document.querySelector('.selected')?.classList.remove('selected')
-      const [arr, n, li] = targets(target)
+      const { arr, n, li } = targets(target)
       li.classList.add('selected')
       const i = arr[n];
       adding.name_.form.reset();
@@ -346,7 +354,7 @@
       if (url) i.url = url;
       if (hot) i.hot = hot;
 
-      const [arr, n, li] = targets(target)
+      const { arr, n, li } = targets(target)
       const pos = confirm('before ' + arr[n].name)
         ? 'before' : 'after'
       arr.splice(pos == 'before' ? n : n + 1, 0, i)
@@ -361,7 +369,7 @@
       if (!s) return;
       const file = getComputedStyle(s).getPropertyValue('--file')
       if (!file) return;
-      const [arr, n, li] = targets(s)
+      const { arr, n, li } = targets(s)
       const i = arr[n];
       const name = adding.name_.value;
       const url = adding.url.value;
@@ -378,7 +386,7 @@
     }
 
     async function syncNewFile(target, file) {
-      const [arr, n, li] = targets(target)
+      const { arr, n, li } = targets(target)
       const i = arr[n];
       if (!i.arr) return alert('no arr')
       const f = prompt('name', i.name)
@@ -397,10 +405,11 @@
     }
 
     async function syncMv(target, file) {
-      const [arr, n, li] = targets(target)
+      const { arr, n, li } = targets(target)
       arr.splice(n, 0, lastDel)
       try {
         await put(file)
+        lastElDel.classList.remove('move', 'wide')
         li.before(lastElDel)
         lastDel = null
       } catch (e) {
@@ -411,13 +420,17 @@
     let lastDel, lastElDel
 
     async function syncRm(target, file) {
-      const [arr, n, li] = targets(target)
+      const { arr, n, li } = targets(target)
       if (!tool.batch.checked && !confirm(`rm ${arr[n].name} ?`)) return;
       [lastDel] = arr.splice(n, 1)
       try {
         await put(file)
         li.remove()
         lastElDel = li
+        if (tool.action.value == 'mv') {
+          li.classList.add('move', 'wide')
+          tool.el.prepend(li)
+        }
       } catch (e) {
         lastDel = null;
         alert(e)
@@ -425,7 +438,7 @@
     }
 
     function syncFold(target, file) {
-      const [arr, n, li] = targets(target)
+      const { arr, n, li } = targets(target)
       const i = arr[n];
       if (!i.arr) return alert('this is no list')
       if (i.fold) return alert('alredy folded')
@@ -435,7 +448,7 @@
     }
 
     async function syncSub(target, file) {
-      const [arr, n, li] = targets(target)
+      const { arr, n, li } = targets(target)
       const p = arr[n - 1];
       if (!p) return alert('no prev')
       if (p.file) return alert('file cannot be prev, use move')
@@ -477,7 +490,7 @@
       const arr = arrByUl.get(ul)
       const id = li.dataset.id
       const n = arr.findIndex(i => i.id == id)
-      return [arr, n, li]
+      return { arr, n, li }
     }
 
     function editCredentials(error = '') {
