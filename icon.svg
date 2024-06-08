@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
-	<line x1="0" y1="0" x2="100" y2="10" stroke="blue" stroke-width="4" />
-	<line x1="50" y1="25" x2="100" y2="20" stroke="green" stroke-width="4" />
-	<line x1="0" y1="0" x2="100" y2="50" stroke="yellow" stroke-width="4" />
-	<line x1="0" y1="0" x2="100" y2="100" stroke="white" stroke-width="4" />
-	<line x1="50" y1="50" x2="100" y2="75" stroke="gray" stroke-width="4" />
-	<line x1="50" y1="50" x2="50" y2="100" stroke="gray" stroke-width="4" />
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 500 500">
+	<path 
+		stroke-width="10"
+		stroke="#444"
+		fill="#e44"
+		d="M 450 50 L 50 250 L 220 335 L 220 250 L 360 182 L 360 405 L 450 450 L 450 50 Z" />
 </svg>
