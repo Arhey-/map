@@ -193,7 +193,7 @@
       li.dataset.id = i.id;
       if (i.hot) {
         if (i.hot < Date.now()) li.classList.add('hot');
-        else setTimeout(() => li.classList.add('hot'), Math.min(i.hot - Date.now(), 2**32))
+        else setTimeout(() => li.classList.add('hot'), Math.min(i.hot - Date.now(), 2**31 - 1))
       }
       if (i.file) {
         const b = html.button(() => fileLoader(i.file, b), i.name);
