@@ -116,7 +116,8 @@
 
     async function lsAndUpdated() {
       const s = await fetch(snippetUrl, { headers }).then(r => r.json())
-      updated ||= document.body.appendChild(html.p())
+      const history = `https://bitbucket.org/${user}/workspace/snippets/${id}/revisions/`
+      updated ||= document.body.appendChild(html.a({ href: history }))
       updated.textContent = new Date(s.updated_on).toLocaleString()
 
       ls?.remove()
