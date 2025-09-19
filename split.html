@@ -12,20 +12,37 @@
 
 		iframe {
 			border: 0;
-			margin: 1px;
+			margin: 0 1px;
 			flex-grow: 1;
 		}
 	</style>
 </head>
 
 <body>
-	<iframe src="/map/?target=right-side"></iframe>
-	<iframe name="right-side"></iframe>
+	<iframe name="v1"></iframe>
+	<iframe name="v2"></iframe>
 	<script>
-		const r = new URL(location).searchParams.get('right')
-		if (r) {
-			frames['right-side'].location.href = '/map/?file=' + r;
-			document.title += ` - ${r}`;
+		const q = new URL(location).searchParams
+		const v1 = q.get('v1') || ''
+		const t1 = q.get('v1t') || 'v2'
+		document.title += ` - ${v1}`
+		frames['v1'].location.href = `/map/?file=${v1}&target=${t1}`
+
+		const v2 = q.get('v2')
+		if (v2) {
+			const t = q.get('v2t') || ''
+			document.title += ` - ${v2}`
+			frames['v2'].location.href = `/map/?file=${v2}&target=${t}`
+		}
+
+		for (let i = 3; i < 9; i++) {
+			const n = q.get(`v${i}`)
+			if (!n) break;
+			document.title += ` - ${n}`
+			const f = document.createElement('iframe')
+			f.name = `v${i}`
+			f.src = '/map/?file=' + n;
+			document.body.append(f)
 		}
 	</script>
 </body>
