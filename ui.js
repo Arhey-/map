@@ -57,13 +57,13 @@ export class Tree {
         const entries = Object.entries(ls)
         const followers = new Map(entries.map(e => [e[1].f, e]))
         const lis = []
-        let fKey
+        let key
         while (true) {
-            const f = followers.get(fKey)
+            const f = followers.get(key)
             if (!f) break;
-            const [key, v] = f
-            lis.push(this.#node(key, v))
-            fKey = v.f
+            const [k, v] = f
+            lis.push(this.#node(k, v))
+            key = k
         }
         if (lis.length !== entries.length) {
             throw new Error('.f inconsistent')
