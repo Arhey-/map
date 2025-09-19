@@ -2,35 +2,43 @@ import { html, fold } from '../lib/html.js'
 
 export class FileList {
     #aTarget = '_blank'
-    #ls
+    #el
     constructor(aTarget) {
         this.#aTarget = aTarget
     }
 
     err(e, el) {
-        this.#dialog(el, html.pre(e.toString()))
+        this.#render(el, html.pre(e.toString()))
     }
 
-    render(names, el) {
+    update(names, el) {
         if (!names.length) return;
-        this.#ls?.remove()
         const lis = names.map(n => {
             const target = this.#aTarget
             const a = html.a({ target, href: `?file=${n}` }, n)
             return html.li(a)
         })
-        this.#dialog(el, html.ul(...lis))
+        this.#render(el, html.ul(...lis))
     }
 
-    #dialog(el, children) {
-        this.#ls = el.appendChild(html.dialog(
+    #render(el, children) {
+        const nav = this.#el?.querySelector('nav')
+        if (nav) {
+            nav.replaceChildren(children)
+        } else {
+            this.#mount(el, children)
+        }
+    }
+
+    #mount(el, children) {
+        this.#el = el.appendChild(html.dialog(
             html.button(e => e.target.closest('dialog')?.close(), 'close'),
-            children
+            html.nav(children)
         ))
     }
 
     show() {
-        this.#ls?.showModal()
+        this.#el?.showModal()
     }
 }
 

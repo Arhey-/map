@@ -28,14 +28,14 @@ if (!rtdbURL) {
 	makeTool();
 	document.addEventListener('click', handlePlace);
 	document.addEventListener('keydown', handleKeys);
+
+	rdb.value('map/index', index => {
+		const ls = index ? Object.keys(index) : []
+		fileList.update(ls, document.body)
+	}, e => fileList.err(e, document.body))
 } catch (e) {
 	editCredentials(e)
 }
-
-rdb.value('map/index', index => {
-	const ls = index ? Object.keys(index) : []
-	fileList.render(ls, document.body)
-}, e => fileList.err(e, document.body))
 
 async function get(name) {
 	const f = await rdb.get(`map/ls/${name}`);
