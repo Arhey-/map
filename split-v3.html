@@ -19,13 +19,20 @@
 </head>
 
 <body>
-	<iframe src="/map/?target=v2"></iframe>
+	<iframe name="v1"></iframe>
 	<iframe name="v2"></iframe>
 	<iframe name="v3"></iframe>
 	<script>
-		const c = new URL(location).searchParams.get('v2')
-		const r = new URL(location).searchParams.get('v3')
-		if (c || r) document.title += ` - ${c || '_'} - ${r || '_'}`
+		const q = new URL(location).searchParams
+		const l = q.get('v1')
+		const c = q.get('v2')
+		const r = q.get('v3')
+		if (l || c || r) {
+			document.title += ` - ${l || '_'} - ${c || '_'} - ${r || '_'}`
+		}
+		frames['v1'].location.href = l
+			? '/map/?target=v2&file=' + l
+			: '/map/?target=v2'
 		if (c) frames['v2'].location.href = '/map/?file=' + c;
 		if (r) frames['v3'].location.href = '/map/?file=' + r;
 	</script>
