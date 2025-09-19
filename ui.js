@@ -63,7 +63,7 @@ export class Tree {
             if (!f) break;
             const [k, v] = f
             lis.push(this.#node(k, v))
-            key = k
+            key = +k
         }
         if (lis.length !== entries.length) {
             throw new Error('.f inconsistent')
