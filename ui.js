@@ -65,11 +65,9 @@ export class Tree {
             lis.push(this.#node(k, v))
             key = +k
         }
-        if (lis.length !== entries.length) {
-            throw new Error('.f inconsistent')
-        }
+        const inconsistent = lis.length !== entries.length
 
-        const ul = html.ul(...lis)
+        const ul = html.ul({ class: { inconsistent } }, ...lis)
         if (ofFile) ul.style.setProperty('--file', ofFile)
         this.#lsByUl.set(ul, ls)
         return ul
