@@ -54,8 +54,21 @@ export class Tree {
 
     // TODO path
     makeBranch(ls, ofFile) {
-        const lis = Object.entries(ls)
-            .map(e => this.#node(e[0], e[1]))
+        const entries = Object.entries(ls)
+        const followers = new Map(entries.map(e => [e[1].f, e]))
+        const lis = []
+        let fKey
+        while (true) {
+            const f = followers.get(fKey)
+            if (!f) break;
+            const [key, v] = f
+            lis.push(this.#node(key, v))
+            fKey = v.f
+        }
+        if (lis.length !== entries.length) {
+            throw new Error('.f inconsistent')
+        }
+
         const ul = html.ul(...lis)
         if (ofFile) ul.style.setProperty('--file', ofFile)
         this.#lsByUl.set(ul, ls)
