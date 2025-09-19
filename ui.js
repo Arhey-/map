@@ -7,6 +7,10 @@ export class FileList {
         this.#aTarget = aTarget
     }
 
+    err(e, el) {
+        this.#dialog(el, html.pre(e.toString()))
+    }
+
     render(names, el) {
         if (!names.length) return;
         this.#ls?.remove()
@@ -15,9 +19,13 @@ export class FileList {
             const a = html.a({ target, href: `?file=${n}` }, n)
             return html.li(a)
         })
+        this.#dialog(el, html.ul(...lis))
+    }
+
+    #dialog(el, children) {
         this.#ls = el.appendChild(html.dialog(
             html.button(e => e.target.closest('dialog')?.close(), 'close'),
-            html.ul(...lis)
+            children
         ))
     }
 

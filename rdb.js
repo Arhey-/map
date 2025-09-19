@@ -14,3 +14,9 @@ export async function get(path) {
     const s = await get(ref(db, path))
     if (s.exists()) return s.val()
 }
+
+// return fn to unsubscribe
+export async function value(path, cb, errCb) {
+    const { onValue, ref } = await import(dbJS)
+    return onValue(ref(db, path), s => cb(s.val()), errCb)
+}
