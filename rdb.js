@@ -20,3 +20,12 @@ export async function value(path, cb, errCb) {
     const { onValue, ref } = await import(dbJS)
     return onValue(ref(db, path), s => cb(s.val()), errCb)
 }
+
+export async function children(path, cb) {
+    const { ref, onChildAdded, onChildChanged, onChildRemoved } = await import(dbJS)
+    const r = ref(db, path)
+    const call = event => s => cb(event, s.key,`${s.key}`, s.val())
+    onChildAdded(r, call('add'))
+    onChildChanged(r, call('up'))
+    onChildRemoved(r, call('rm'))
+}

@@ -72,7 +72,7 @@ export class Tree {
     makeBranch(ls, ofFile) {
         const entries = Object.entries(ls)
         const followers = new Map(entries.map(e => [e[1].f, e]))
-        const lis = []
+        let lis = []
         let key
         while (true) {
             const f = followers.get(key)
@@ -82,6 +82,11 @@ export class Tree {
             key = +k
         }
         const inconsistent = lis.length !== entries.length
+        if (inconsistent) {
+            const existingKeys = new Set(lis.map(li => li.dataset.key))
+            const missing = entries.filter(e => !existingKeys.has(e[0]))
+            lis = lis.concat(missing.map(e => this.#node(e[0], e[1])))
+        }
 
         const ul = html.ul({ class: { inconsistent } }, ...lis)
         if (ofFile) ul.style.setProperty('--file', ofFile)
