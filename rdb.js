@@ -16,15 +16,18 @@ export async function get(path) {
 }
 
 // return fn to unsubscribe
-export async function value(path, cb, errCb) {
+export async function onValue(path, cb, errCb) {
     const { onValue, ref } = await import(dbJS)
     return onValue(ref(db, path), s => cb(s.val()), errCb)
 }
 
-export async function children(path, cb) {
+// TODO add 'moved' event?
+// TODO return fn to unsubscribe (off)
+// TODO error handling
+export async function onChild(path, cb) {
     const { ref, onChildAdded, onChildChanged, onChildRemoved } = await import(dbJS)
     const r = ref(db, path)
-    const call = event => s => cb(event, s.key,`${s.key}`, s.val())
+    const call = ev => s => cb(ev, s.key, s.val())
     onChildAdded(r, call('add'))
     onChildChanged(r, call('up'))
     onChildRemoved(r, call('rm'))

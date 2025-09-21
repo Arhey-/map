@@ -1,5 +1,11 @@
 import { html, fold } from '../lib/html.js'
 
+function Text(rv) {
+    const el = document.createTextNode(rv())
+    rv.watch(t => { el.textContent = t })
+    return el
+}
+
 export class FileList {
     #aTarget = '_blank'
     #el
@@ -64,14 +70,39 @@ export class Tree {
         const li = el.closest('li')
         const ul = li.closest('ul')
         const { key } = li.dataset
-        const i = this.#lsByUl.get(ul)[key]
-        return { i, li }
+        const { v } = this.#lsByUl.get(ul)[key]
+        const name = v.name()
+        const url = v.url?.()
+        const hot = v.hot?.()
+        return { i: { name, url, hot }, li }
     }
 
-    // TODO path
-    makeBranch(ls, ofFile) {
-        const entries = Object.entries(ls)
-        const followers = new Map(entries.map(e => [e[1].f, e]))
+    // TODO path for fork
+    makeBranch($$ls, ofFile) {
+        const { lis, inconsistent } = this.#makeNodes($$ls)
+        const ul = html.ul({ class: { inconsistent } }, ...lis)
+        if (ofFile) ul.style.setProperty('--file', ofFile)
+        this.#lsByUl.set(ul, $$ls)
+
+        $$ls.onAdd((k, v) => {
+            const li = this.#node(k, v)
+            const f = v.v.f?.()
+            if (!f) return ul.prepend(li);
+            const prev = ul.querySelector(`[data-key="${f}"]`)
+            if (prev) {
+                prev.after(li)
+            } else {
+                ul.append(li)
+                ul.classList.add('inconsistent') // TODO on all loaded
+            }
+        })
+        $$ls.onRm(k => { ul.querySelector(`[data-key="${k}"]`)?.remove() })
+        return ul
+    }
+
+    #makeNodes($$ls) {
+        const entries = Object.entries($$ls.v)
+        const followers = new Map(entries.map(e => [e[1].v.f?.(), e]))
         let lis = []
         let key
         while (true) {
@@ -87,52 +118,89 @@ export class Tree {
             const missing = entries.filter(e => !existingKeys.has(e[0]))
             lis = lis.concat(missing.map(e => this.#node(e[0], e[1])))
         }
-
-        const ul = html.ul({ class: { inconsistent } }, ...lis)
-        if (ofFile) ul.style.setProperty('--file', ofFile)
-        this.#lsByUl.set(ul, ls)
-        return ul
+        return { lis, inconsistent }
     }
 
-    #node(key, i) {
-        const { name, file, hot } = i
+    #node(key, $$node) {
         const li = html.li();
         li.dataset.key = key;
-        if (hot) {
-            if (hot < Date.now()) li.classList.add('hot');
-            else setTimeout(
-                () => li.classList.add('hot'),
-                Math.min(hot - Date.now(), 2 ** 31 - 1)
-            )
-        }
-        if (file) return this.#fileNode(li, file, name)
-        const title = i.url
-            ? html.a({ target: '_blank', href: i.url, }, name)
-            : name
-        if (i.url?.startsWith('https://www.youtube.com/')) li.classList.add('yt')
-        if (i.url?.startsWith('https://www.google.com/')) li.classList.add('google')
+
+        const renew = () => {
+            li.replaceWith(this.#node(key, $$node))
+            // TODO once, maybe batch
+            // TODO signal for all below to unwatch by li
+        };
+        $$node.onAdd(renew)
+        $$node.onRm(renew)
+
+        const i = $$node.v
+        if (i.hot) this.#hot(li, i.hot);
+        if (i.file?.()) return this.#fileNode(li, i.file, i.name);
+        const title = this.#textOrLink(i.name, i.url, li.classList);
         if (i.ls) return this.#fork(li, title, i.ls, i.fold);
         li.append(title);
         return li
     }
 
+    #hot(li, $hot) {
+        let t
+        const up = hot => {
+            clearTimeout(t) // TODO on rm
+            if (hot) {
+                if (hot < Date.now()) li.classList.add('hot');
+                else t = setTimeout(
+                    () => li.classList.add('hot'),
+                    Math.min(hot - Date.now(), 2 ** 31 - 1)
+                );
+            } else {
+                li.classList.remove('hot')
+            }
+        }
+        up($hot())
+        $hot.watch(hot => up(hot))
+    }
+
+    // TODO url on add, rm
+    #textOrLink($name, $url, liClassList) {
+        const nameEl = Text($name)
+
+        const href = $url?.()
+        if (!href) return nameEl;
+
+        const a = html.a({ target: '_blank', href }, nameEl)
+        this.#icon(href, liClassList)
+        $url.watch(u => {
+            a.href = u
+            this.#icon(u, liClassList)
+        })
+        return a
+    }
+
+    #icon(url, liClassList) {
+        liClassList.toggle('yt', url.startsWith('https://www.youtube.com/'))
+        liClassList.toggle('google', url.startsWith('https://www.google.com/'))
+    }
+
     // FIXME fileLoader
-    #fileNode(li, file, name) {
-        const load = () => this.#load(file, b);
+    #fileNode(li, $file, $name) {
+        const load = () => this.#load($file, b);
         const b = html.button(load, 'load');
         if (this.#isLoadRefsAsap) setTimeout(load);
         const target = this.#aTarget
-        const a = html.a({ target, href: `?file=${file}` }, ` ${name}`);
+        const a = html.a({ target, href: `?file=${$file}` }, ' ', Text($name))
+        $file.watch(f => { a.href = `?file=${f}` })
         li.append(b, a);
         return li
     }
 
-    async #load(name, button) {
+    // TODO live
+    async #load($name, button) {
         button.disabled = true;
+        const name = $name()
         try {
-            const i = await this.#loadRef(name)
+            const rt = await this.#loadRef(name)
             const li = button.parentElement
-            const f = fold(li.children, this.makeBranch(i.ls, name))
+            const f = fold(li.children, this.makeBranch(rt, name))
             f.open = true;
             li.append(f)
             button.textContent = 'ok'
@@ -144,9 +212,11 @@ export class Tree {
         }
     }
 
-    #fork(li, title, ls, isFold) {
-        const branch = this.makeBranch(ls)
-        if (isFold) {
+    // TODO add, rm fold
+    #fork(li, title, $$ls, $isFold) {
+        // TODO path
+        const branch = this.makeBranch($$ls)
+        if ($isFold?.()) {
             li.append(fold(title, branch))
         } else {
             li.append(title, branch);

@@ -1,5 +1,6 @@
 import { html, select } from '../lib/html.js'
-import * as rdb from './rdb.js'
+import { init, onChild, onValue } from './rdb.js'
+import { ReTree } from './re-tree.js'
 import { Tree, FileList } from './ui.js'
 import { bookmarklet } from './bookmarklet.js'
 
@@ -8,7 +9,7 @@ const query = new URL(location).searchParams;
 const isLoadRefsOnStart = query.has('load-refs');
 const aTarget = query.get('target') || '_blank';
 
-const tree = new Tree(get, isLoadRefsOnStart, aTarget)
+const tree = new Tree(connect, isLoadRefsOnStart, aTarget)
 const tool = {
 	get active() { return adding.name_?.value || tool.action.value }
 };
@@ -18,29 +19,36 @@ const { rtdbURL } = localStorage;
 if (!rtdbURL) {
 	editCredentials()
 } else try {
-	await rdb.init(rtdbURL)
+	await init(rtdbURL)
 	const n = query.get('file')
 	if (n) {
 		if (n != 'main') document.title += ` - ${n}`;
-		const root = await get(n);
-		document.body.append(tree.makeBranch(root.ls, n));
+		const root = await connect(n);
+		document.body.append(tree.makeBranch(root, n));
 	}
 	makeTool();
 	document.addEventListener('click', handlePlace);
 	document.addEventListener('keydown', handleKeys);
 
-	rdb.value('map/index', index => {
+	onValue('map/index', index => {
 		const ls = index ? Object.keys(index) : []
 		fileList.update(ls, document.body)
+		// TODO last up
 	}, e => fileList.err(e, document.body))
 } catch (e) {
 	editCredentials(e)
 }
 
-async function get(name) {
-	const f = await rdb.get(`map/ls/${name}`);
-	if (!f) throw new Error(`"${name}" load error`);
-	return f;
+// throw new Error(`"${name}" load error`); // TODO
+async function connect(name) {
+	const rt = new ReTree({});
+	await onChild(`map/ls/${name}/ls`, (ev, k, v) => {
+		if ('add' == ev) rt.add(k, v);
+		if ('up' == ev) rt.up(k, v);
+		if ('rm' == ev) rt.rm(k);
+		// TODO last up
+	});
+	return rt
 }
 
 
