@@ -38,7 +38,7 @@ export class ReTree {
         const r = this.#v[key] = isObject(v)
             ? new ReTree(v)
             : reactive(v)
-        for (const cb of this.#onAdd) {
+        for (const cb of [...this.#onAdd]) {
             cb(key, r)
         }
     }
@@ -48,7 +48,7 @@ export class ReTree {
         if (old == null) return;
         old.dispose()
         delete this.#v[key]
-        for (const cb of this.#onRm) {
+        for (const cb of [...this.#onRm]) {
             cb(key)
         }
     }

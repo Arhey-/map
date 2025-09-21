@@ -126,6 +126,7 @@ export class Tree {
         li.dataset.key = key;
 
         const renew = () => {
+            // FIXME
             li.replaceWith(this.#node(key, $$node))
             // TODO once, maybe batch
             // TODO signal for all below to unwatch by li
