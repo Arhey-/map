@@ -125,16 +125,16 @@ export class Tree {
         const li = html.li();
         li.dataset.key = key;
 
-        const ac = new AbortController();
+        const ac = new AbortController(); // TODO abort on dispose
         const renew = () => {
-            ac.abort() // TODO signal to all below to unwatch li
+            ac.abort()
             li.replaceWith(this.#node(key, $$node))
         };
         $$node.onAdd(renew, ac.signal)
         $$node.onRm(renew, ac.signal)
 
         const i = $$node.v
-        if (i.hot) this.#hot(li, i.hot);
+        if (i.hot) this.#hot(li, i.hot, ac.signal);
         if (i.file?.()) return this.#fileNode(li, i.file, i.name);
         const title = this.#textOrLink(i.name, i.url, li.classList);
         if (i.ls) return this.#fork(li, title, i.ls, i.fold);
@@ -142,10 +142,10 @@ export class Tree {
         return li
     }
 
-    #hot(li, $hot) {
+    #hot(li, $hot, signal) {
         let t
         const up = hot => {
-            clearTimeout(t) // TODO on rm
+            clearTimeout(t)
             if (hot) {
                 if (hot < Date.now()) li.classList.add('hot');
                 else t = setTimeout(
@@ -157,7 +157,8 @@ export class Tree {
             }
         }
         up($hot())
-        $hot.watch(hot => up(hot))
+        $hot.watch(up, signal)
+        signal.addEventListener('abort', () => clearTimeout(t), { once: true })
     }
 
     // TODO url on add, rm
