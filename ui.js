@@ -125,14 +125,13 @@ export class Tree {
         const li = html.li();
         li.dataset.key = key;
 
+        const ac = new AbortController();
         const renew = () => {
-            // FIXME
+            ac.abort() // TODO signal to all below to unwatch li
             li.replaceWith(this.#node(key, $$node))
-            // TODO once, maybe batch
-            // TODO signal for all below to unwatch by li
         };
-        $$node.onAdd(renew)
-        $$node.onRm(renew)
+        $$node.onAdd(renew, ac.signal)
+        $$node.onRm(renew, ac.signal)
 
         const i = $$node.v
         if (i.hot) this.#hot(li, i.hot);

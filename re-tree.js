@@ -38,9 +38,7 @@ export class ReTree {
         const r = this.#v[key] = isObject(v)
             ? new ReTree(v)
             : reactive(v)
-        for (const cb of [...this.#onAdd]) {
-            cb(key, r)
-        }
+        this.#emit(this.#onAdd, key, r)
     }
 
     rm(key) {
@@ -48,9 +46,7 @@ export class ReTree {
         if (old == null) return;
         old.dispose()
         delete this.#v[key]
-        for (const cb of [...this.#onRm]) {
-            cb(key)
-        }
+        this.#emit(this.#onRm, key, null)
     }
 
     up(key, v) {
@@ -86,8 +82,22 @@ export class ReTree {
         }
     }
 
-    onAdd(cb) { this.#onAdd.push(cb) } // TODO off
-    onRm(cb) { this.#onRm.push(cb) } // TODO off
+    onAdd(cb, signal) { this.#on(this.#onAdd, cb, signal) } // TODO off
+    onRm(cb, signal) { this.#on(this.#onRm, cb, signal) } // TODO off
+
+    #on(handlers, cb, signal) {
+        handlers.push(cb) 
+        signal?.addEventListener('abort', () => {
+            const i = handlers.indexOf(cb)
+            if (i !== -1) handlers.splice(i, 1)
+        }, { once: true })
+    }
+    
+    #emit(handlers, key, v) {
+        for (const cb of [...handlers]) { // copy to avoid endless loop if cb adds handlers
+            cb(key, v)
+        }
+    }
 
     dispose() {
         for (const v of Object.values(this.#v)) {
