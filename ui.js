@@ -125,7 +125,7 @@ export class Tree {
     }
 
     #resortNodes(ul, $$ls) {
-        if (!ul.classList.has('inconsistent')) return;
+        if (!ul.classList.contains('inconsistent')) return;
         const entries = Object.entries($$ls.v)
         const followers = new Map(entries.map(e => [e[1].v.f?.(), e[0]]))
 
