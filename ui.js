@@ -84,6 +84,7 @@ export class Tree {
         if (ofFile) ul.style.setProperty('--file', ofFile)
         this.#lsByUl.set(ul, $$ls)
 
+        let debaunceFirstLoad // rtdb don't have that ordering kind (half linked list)
         $$ls.onAdd((k, v) => {
             const li = this.#node(k, v)
             const f = v.v.f?.()
@@ -93,7 +94,9 @@ export class Tree {
                 prev.after(li)
             } else {
                 ul.append(li)
-                ul.classList.add('inconsistent') // TODO on all loaded
+                ul.classList.add('inconsistent')
+                clearTimeout(debaunceFirstLoad)
+                debaunceFirstLoad = setTimeout(() => this.#resortNodes(ul, $$ls), 35)
             }
         })
         $$ls.onRm(k => { ul.querySelector(`[data-key="${k}"]`)?.remove() })
@@ -119,6 +122,31 @@ export class Tree {
             lis = lis.concat(missing.map(e => this.#node(e[0], e[1])))
         }
         return { lis, inconsistent }
+    }
+
+    #resortNodes(ul, $$ls) {
+        if (!ul.classList.has('inconsistent')) return;
+        const entries = Object.entries($$ls.v)
+        const followers = new Map(entries.map(e => [e[1].v.f?.(), e[0]]))
+
+        const firstKey = followers.get()
+        if (!firstKey) return;
+        const first = ul.querySelector(`[data-key="${firstKey}"]`)
+        if (!first) return;
+        ul.prepend(first);
+
+        let i = 1
+        for (let key = firstKey, prev = first; i < entries.length; i++) {
+            const f = followers.get(+key)
+            if (!f) break;
+            const li = ul.querySelector(`[data-key="${f}"]`)
+            if (!li) return;
+            prev.after(li)
+            key = f, prev = li
+        }
+        if (i === entries.length) {
+            ul.classList.remove('inconsistent')
+        }
     }
 
     #node(key, $$node) {
