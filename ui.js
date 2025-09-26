@@ -70,11 +70,13 @@ export class Tree {
         const li = el.closest('li')
         const ul = li.closest('ul')
         const { key } = li.dataset
-        const { v } = this.#lsByUl.get(ul)[key]
+        const rt = his.#lsByUl.get(ul)
+        const path = `${rt.path}/${key}`
+        const { v } = rt.v[key]
         const name = v.name()
         const url = v.url?.()
         const hot = v.hot?.()
-        return { i: { name, url, hot }, li }
+        return { path, i: { name, url, hot }, li }
     }
 
     // TODO path for fork

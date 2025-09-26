@@ -1,5 +1,5 @@
 import { html, select } from '../lib/html.js'
-import { init, onChild, onValue } from './rdb.js'
+import { init, onChild, onValue, put } from './rdb.js'
 import { ReTree } from './re-tree.js'
 import { Tree, FileList } from './ui.js'
 import { bookmarklet } from './bookmarklet.js'
@@ -11,7 +11,8 @@ const aTarget = query.get('target') || '_blank';
 
 const tree = new Tree(connect, isLoadRefsOnStart, aTarget)
 const tool = {
-	get active() { return adding.name_?.value || tool.action.value }
+	get active() { return tool.editor?.name.value || tool.action.value },
+	editor: null,
 };
 const fileList = new FileList(aTarget)
 
@@ -27,7 +28,7 @@ if (!rtdbURL) {
 		document.body.append(tree.makeBranch(root, n));
 	}
 	makeTool();
-	document.addEventListener('click', handlePlace);
+	document.addEventListener('click', handlePlace); // TODO tree.onClick
 	document.addEventListener('keydown', handleKeys);
 
 	onValue('map/index', index => {
@@ -41,8 +42,9 @@ if (!rtdbURL) {
 
 // throw new Error(`"${name}" load error`); // TODO
 async function connect(name) {
-	const rt = new ReTree({});
-	await onChild(`map/ls/${name}/ls`, (ev, k, v) => {
+	const path = `map/ls/${name}/ls`;
+	const rt = new ReTree({}, path);
+	await onChild(path, (ev, k, v) => {
 		if ('add' == ev) rt.add(k, v);
 		if ('up' == ev) rt.up(k, v);
 		if ('rm' == ev) rt.rm(k);
@@ -51,51 +53,40 @@ async function connect(name) {
 	return rt
 }
 
+async function save(path, updates) {
+	const spin = document.body.appendChild(html.div({ className: 'spin' }))
+	await put(path, updates).finally(() => spin.remove());
+}
 
-// TODO wtf
+
 function makeTool() {
 	const action = select([['', 'action'], 'edit', 'focus'])
 	action.onchange = () => {
 		if (isMobile) document.body.classList.toggle('edit-mode', tool.action.value)
-		if (action.value) {
-			if (action.value == 'mv') batch.checked = true
-		} else {
+		if (!action.value) {
 			const s = document.querySelector('.selected')
 			if (!s) return;
 			s.classList.remove('selected')
 			tool.add.textContent = 'add'
-			adding.name_?.form.reset()
+			tool.editor?.reset()
 		}
 	}
-	tool.action = action
 
-	const batch = html.input({
-		type: 'checkbox', onchange: () => {
-			if (batch.checked) return;
-			action.value = ''
-			action.onchange()
-			// put().catch(e => alert('err: ' + e))
-		}
-	})
-	tool.batch = batch
-
-	tool.add = html.button(adding, 'add')
 	tool.el = html.div({ className: 'tool' },
 		html.button(() => fileList.show(), 'ls'),
-		tool.add,
-		html.label(batch, 'batch'),
-		action
+		tool.add = html.button(makeEditor, 'add'),
+		tool.action = action
 	)
 	document.body.append(tool.el)
 }
 
-// TODO wtf
-function adding() {
-	if (adding.name_) {
-		if (tool.action.value == 'edit') alert('TODO sync edit')
+function makeEditor() {
+	if (tool.editor) { // TODO replace tool.add.onclick
+		if (tool.action.value == 'edit') saveEdit();
 		return
 	}
 	const name = html.input({
+		name: 'name',
 		placeholder: 'name or .bkm', className: 'wide', onfocus: () => {
 			if (tool.action.value != 'edit') tool.action.value = '';
 			if (!name.value) navigator.clipboard.readText().then(n => {
@@ -119,16 +110,15 @@ function adding() {
 		}
 		url.hidden = hot.hidden = !name.value;
 		tool.action.onchange()
-	}
-	const url = html.input({ placeholder: 'url', className: 'wide', hidden: true })
-	const hot = html.input({ type: 'date', hidden: true })
-	document.body.querySelector('.tool').prepend(html.form({
-		className: 'wide', onreset() { tool.action.onchange() }
-	}, name, url, hot))
-
-	adding.name_ = name;
-	adding.url = url;
-	adding.hot = hot;
+	};
+	const url = html.input({ name: 'url', placeholder: 'url', className: 'wide', hidden: true })
+	const hot = html.input({ name: 'hot', type: 'date', hidden: true })
+	tool.editor = html.form({
+		name: 'editor',
+		className: 'wide',
+		onreset() { tool.action.onchange() }
+	}, name, url, hot)
+	tool.el.prepend(tool.editor)
 }
 
 function handlePlace(e) {
@@ -146,7 +136,7 @@ function handlePlace(e) {
 	if ('edit' == action) return selectForEditOrSkip(e.target)
 
 	alert(`TODO save to ${file}`)
-	adding.name_.form.reset()
+	tool.editor.reset()
 }
 
 function handleKeys(e) {
@@ -163,13 +153,31 @@ function selectForEditOrSkip(target) {
 	document.querySelector('.selected')?.classList.remove('selected')
 	const { i, li } = tree.getNode(target)
 	li.classList.add('selected')
-	if (!adding.name_) adding()
-	adding.name_.form.reset();
-	adding.name_.value = i.name || '';
-	adding.url.value = i.url || '';
-	if (i.hot) adding.hot.valueAsNumber = i.hot;
+	if (!tool.editor) makeEditor();
+	const { editor } = tool;
+	editor.reset();
+	editor.name.value = i.name || '';
+	editor.url.value = i.url || '';
+	if (i.hot) editor.hot.valueAsNumber = i.hot;
 	tool.add.textContent = 'apply'
-	adding.name_.onchange()
+	editor.name.onchange()
+}
+
+async function saveEdit() {
+	const s = document.querySelector('.selected') // TODO? tree.selected
+	if (!s) return;
+	if (!getComputedStyle(s).getPropertyValue('--file')) return; // TODO incapsulate
+	const { path } = tree.getNode(s)
+	const { name, url, hot } = tool.editor;
+	// todo only changed, if no change return
+	await save(path, {
+		name: name.value || null,
+		url: url.value || null,
+		hot: hot.valueAsNumber || null,
+	});
+	s.classList.remove('selected')
+	tool.add.textContent = 'add'
+	tool.editor.reset()
 }
 
 function editCredentials(error = '') {

@@ -6,22 +6,23 @@ const isObject = v => v && typeof v === 'object' && !Array.isArray(v)
 // TODO on()
 export class ReTree {
     #v = {}
+    #path = ''
     #onAdd = []
     #onRm = []
 
-    constructor(v) {
+    constructor(v, path = '') {
         if (!isObject(v)) throw new Error('ReTree requires an object');
+        this.#path = path
         for (const [k, val] of Object.entries(v)) {
             if (val == null) continue;
             this.#v[k] = isObject(val)
-                ? new ReTree(val)
+                ? new ReTree(val, `${path}/${k}`)
                 : reactive(val)
         }
     }
 
-    get v() {
-        return this.#v
-    }
+    get v() { return this.#v }
+    get path() { return this.#path }
 
     get raw() {
         return Object.fromEntries(
@@ -36,7 +37,7 @@ export class ReTree {
             return this.up(key, v)
         }
         const r = this.#v[key] = isObject(v)
-            ? new ReTree(v)
+            ? new ReTree(v, `${this.#path}/${key}`)
             : reactive(v)
         this.#emit(this.#onAdd, key, r)
     }

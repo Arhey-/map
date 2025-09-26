@@ -32,3 +32,8 @@ export async function onChild(path, cb) {
     onChildChanged(r, call('up'))
     onChildRemoved(r, call('rm'))
 }
+
+export async function put(path, up) {
+    const { ref, update } = await import(dbJS)
+    return update(ref(db, path), up)
+}
