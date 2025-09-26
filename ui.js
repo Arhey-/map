@@ -70,7 +70,7 @@ export class Tree {
         const li = el.closest('li')
         const ul = li.closest('ul')
         const { key } = li.dataset
-        const rt = his.#lsByUl.get(ul)
+        const rt = this.#lsByUl.get(ul)
         const path = `${rt.path}/${key}`
         const { v } = rt.v[key]
         const name = v.name()
