@@ -179,9 +179,20 @@ async function saveEdit() {
 	tool.editor.reset()
 }
 
+function removeAskPlace() {
+	const prev = document.querySelector('.tree .ask-place-parent')
+	if (prev) {
+		prev.classList.remove('ask-place-parent')
+		prev.querySelectorAll('.ask-place').forEach(e => e.remove())
+	}
+}
+
 function askWhereToAdd(target) {
-	document.querySelectorAll('.tree .ask-place').forEach(e => e.remove())
 	const { li } = tree.getNode(target)
+	if (li.classList.contains('ask-place-parent')) return;
+
+	removeAskPlace()
+	li.classList.add('ask-place-parent')
 	li.prepend(html.div({ class: 'ask-place' }, html.button(saveAdd, 'add before')))
 	li.append(html.div({ class: 'ask-place' }, html.button(saveAdd, 'add after')))
 }
@@ -191,9 +202,10 @@ async function saveAdd() {
 		b.disabled = true
 	}
 	const { path } = tree.getNode(this)
-	alert(this.textContent, path)
+	alert(this.textContent + ' ' + path)
 	// tool.editor.reset()
 }
+
 
 function editCredentials(error = '') {
 	document.body.innerHTML = `<p>${error}</p>`;
