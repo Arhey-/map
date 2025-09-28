@@ -201,9 +201,26 @@ async function saveAdd() {
 	for (const b of document.querySelectorAll('.tree .ask-place button')) {
 		b.disabled = true
 	}
-	const { path } = tree.getNode(this)
-	alert(this.textContent + ' ' + path)
-	// tool.editor.reset()
+	const key = Date.now()
+	const { name, url, hot } = tool.editor;
+	const i = {
+		name: name.value || null,
+		url: url.value || null,
+		hot: hot.valueAsNumber || null,
+	}
+	const target = tree.getNode(this)
+	const updates = { [`${target.dir}/${key}`]: i }
+	if (this.textContent.includes('before')) {
+		if (target.i.f) i.f = target.i.f
+		updates[`${target.path}/f`] = key
+	} else {
+		i.f = +target.key
+		const { nextPath } = target
+		if (nextPath) updates[`${nextPath}/f`] = key
+	}
+	await save('/', updates);
+	removeAskPlace()
+	tool.editor.reset()
 }
 
 

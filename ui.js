@@ -71,12 +71,21 @@ export class Tree {
         const ul = li.closest('ul')
         const { key } = li.dataset
         const rt = this.#lsByUl.get(ul)
-        const path = `${rt.path}/${key}`
-        const { v } = rt.v[key]
+        const { path, v } = rt.v[key]
         const name = v.name()
         const url = v.url?.()
         const hot = v.hot?.()
-        return { path, i: { name, url, hot }, li }
+        const f = v.f?.()
+        return { 
+            dir: rt.path, key, path,
+            i: { name, url, hot, f },
+            li,
+            get nextPath() {
+                return Object.values(rt.v)
+                    .find(i => i.v.f?.() === +key)
+                    ?.path
+            }
+        }
     }
 
     // TODO path for fork
