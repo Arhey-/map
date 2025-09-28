@@ -25,7 +25,8 @@ if (!rtdbURL) {
 	if (n) {
 		if (n != 'main') document.title += ` - ${n}`;
 		const root = await connect(n);
-		document.body.append(tree.makeBranch(root, n));
+		const nav = document.body.appendChild(html.nav({ class: 'tree' }));
+		nav.append(tree.makeBranch(root, n));
 	}
 	makeTool();
 	document.addEventListener('click', handlePlace); // TODO tree.onClick
@@ -123,8 +124,7 @@ function makeEditor() {
 
 function handlePlace(e) {
 	if (!tool.active) return;
-	const file = tree.getFile(e.target)
-	if (!file) return;
+	if (!tree.getFile(e.target)) return;
 	if (e.target.tagName === tree.tagBranch) {
 		alert('tap on tree node')
 		return
@@ -132,11 +132,10 @@ function handlePlace(e) {
 	e.preventDefault()
 	e.stopPropagation()
 	const action = tool.action.value
-	if ('focus' == action) return tree.focusNode(e.target)
-	if ('edit' == action) return selectForEditOrSkip(e.target)
+	if ('focus' == action) return tree.focusNode(e.target);
+	if ('edit' == action) return selectForEditOrSkip(e.target);
 
-	alert(`TODO save to ${file}`)
-	tool.editor.reset()
+	askWhereToAdd(e.target)
 }
 
 function handleKeys(e) {
@@ -178,6 +177,22 @@ async function saveEdit() {
 	s.classList.remove('selected')
 	tool.add.textContent = 'add'
 	tool.editor.reset()
+}
+
+function askWhereToAdd(target) {
+	document.querySelectorAll('.tree .ask-place').forEach(e => e.remove())
+	const { li } = tree.getNode(target)
+	li.prepend(html.div({ class: 'ask-place' }, html.button(saveAdd, 'add before')))
+	li.append(html.div({ class: 'ask-place' }, html.button(saveAdd, 'add after')))
+}
+
+async function saveAdd() {
+	for (const b of document.querySelectorAll('.tree .ask-place button')) {
+		b.disabled = true
+	}
+	const { path } = tree.getNode(this)
+	alert(this.textContent, path)
+	// tool.editor.reset()
 }
 
 function editCredentials(error = '') {
