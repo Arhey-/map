@@ -61,9 +61,9 @@ async function save(path, updates) {
 
 
 function makeTool() {
-	const action = select([['', 'action'], 'edit', 'focus'])
+	const action = select([['', 'action'], 'edit', 'focus', 'airy'])
 	action.onchange = () => {
-		if (isMobile) document.body.classList.toggle('edit-mode', tool.action.value)
+		document.body.classList.toggle('mode-read', tool.action.value == 'airy')
 		if (!action.value) {
 			const s = document.querySelector('.selected')
 			if (!s) return;
@@ -79,6 +79,8 @@ function makeTool() {
 		tool.action = action
 	)
 	document.body.append(tool.el)
+
+	if (isMobile) document.body.classList.add('mobile')
 }
 
 function makeEditor() {
@@ -86,7 +88,7 @@ function makeEditor() {
 		if (tool.action.value == 'edit') saveEdit();
 		return
 	}
-	const name = html.input({
+	const name = html.textarea({
 		name: 'name',
 		placeholder: 'name or .bkm', className: 'wide', onfocus: () => {
 			if (tool.action.value != 'edit') tool.action.value = '';
@@ -117,7 +119,10 @@ function makeEditor() {
 	tool.editor = html.form({
 		name: 'editor',
 		className: 'wide',
-		onreset() { tool.action.onchange() }
+		onreset() { 
+			url.hidden = hot.hidden = !name.value;
+			tool.action.onchange()
+		}
 	}, name, url, hot)
 	tool.el.prepend(tool.editor)
 }
@@ -194,7 +199,11 @@ function askWhereToAdd(target) {
 	removeAskPlace()
 	li.classList.add('ask-place-parent')
 	li.prepend(html.div({ class: 'ask-place' }, html.button(saveAdd, 'add before')))
-	li.append(html.div({ class: 'ask-place' }, html.button(saveAdd, 'add after')))
+	li.append(html.div(
+		{ class: 'ask-place' },
+		html.button(saveAdd, 'add after'),
+		html.button(saveAdd, 'add in')
+	))
 }
 
 async function saveAdd() {
@@ -203,24 +212,63 @@ async function saveAdd() {
 	}
 	const key = Date.now()
 	const { name, url, hot } = tool.editor;
+	if (!name.value) {
+		alert('name required')
+		throw new Error('name required')
+	}
 	const i = {
-		name: name.value || null,
+		name: name.value,
 		url: url.value || null,
 		hot: hot.valueAsNumber || null,
 	}
+	const isMulti = name.value.trim().includes('\n')
 	const target = tree.getNode(this)
-	const updates = { [`${target.dir}/${key}`]: i }
-	if (this.textContent.includes('before')) {
-		if (target.i.f) i.f = target.i.f
-		updates[`${target.path}/f`] = key
+	const isSub = this.textContent.includes('in')
+	const updates = {};
+	if (isSub) {
+		if (isMulti) {
+			newList(name.value, updates, `${target.path}/ls/`, 0)
+		} else {
+			updates[`${target.path}/ls/${key}`] = i
+		}
+	} else if (this.textContent.includes('before')) {
+		if (isMulti) {
+			const lastKey = newList(name.value, updates, `${target.dir}/`, target.i.f || 0)
+			updates[`${target.path}/f`] = lastKey
+		} else {
+			if (target.i.f) i.f = target.i.f;
+			updates[`${target.dir}/${key}`] = i
+			updates[`${target.path}/f`] = key
+		}
 	} else {
-		i.f = +target.key
 		const { nextPath } = target
-		if (nextPath) updates[`${nextPath}/f`] = key
+		if (isMulti) {
+			const lastKey = newList(name.value, updates, `${target.dir}/`, +target.key)
+			if (nextPath) updates[`${nextPath}/f`] = lastKey;
+		} else {
+			i.f = +target.key
+			updates[`${target.dir}/${key}`] = i
+			if (nextPath) updates[`${nextPath}/f`] = key;
+		}
 	}
 	await save('/', updates);
 	removeAskPlace()
 	tool.editor.reset()
+}
+
+// names only
+function newList(mdNames, updates, path, f) {
+	let key = Date.now()
+	const names = mdNames
+		.split('\n')
+		.map(s => s.replace(/^\s*[-*]\s+/, '').trim())
+		.filter(Boolean);
+	for (const name of names) {
+		key++;
+		updates[`${path}${key}`] = f ? { name, f } : { name };
+		f = key;
+	}
+	return key
 }
 
 

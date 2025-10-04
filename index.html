@@ -6,7 +6,7 @@
   <link rel="icon" href="icon.svg">
   <style>
     body { background-color: #222; color: #ccc; }
-    .edit-mode li { padding: 0.2em 0; }
+    .mode-read li { padding: 0.2em 0; }
     a { color: #39c; text-decoration: none; }
     a:hover { color: #6cf; }
     ul { padding-left: 1em; }
@@ -41,7 +41,8 @@
       }
     }
     .tool label, .tool button { margin: 0 0.4em }
-    .tool form { max-height: 3em; overflow: scroll; }
+    .tool form { overflow: scroll; }
+    .mobile .tool form { max-height: 3em; }
     .wide { width: 100% }
 
     .selected { border: 1px dashed; }
