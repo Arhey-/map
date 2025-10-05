@@ -7,6 +7,7 @@ function Text(rv) {
 }
 
 export class FileList {
+    #names = []
     #aTarget = '_blank'
     #el
     constructor(aTarget) {
@@ -19,6 +20,7 @@ export class FileList {
 
     update(names, el) {
         if (!names.length) return;
+        this.#names = names
         const lis = names.map(n => {
             const target = this.#aTarget
             const a = html.a({ target, href: `?file=${n}` }, n)
@@ -45,6 +47,10 @@ export class FileList {
 
     show() {
         this.#el?.showModal()
+    }
+
+    isExist(name) {
+        return this.#names.includes(name)
     }
 }
 

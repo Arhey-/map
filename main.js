@@ -61,10 +61,12 @@ async function save(path, updates) {
 
 
 function makeTool() {
-	const action = select([['', 'action'], 'edit', 'focus', 'airy'])
+	const action = select([['', 'action'], 'edit', 'file', 'focus', 'airy'])
 	action.onchange = () => {
 		document.body.classList.toggle('mode-read', tool.action.value == 'airy')
-		if (!action.value) {
+		if ('file' == action.value) {
+			newFile().finally(() => action.value = '') // TODO? action.onchange()
+		} else if (!action.value) {
 			const s = document.querySelector('.selected')
 			if (!s) return;
 			s.classList.remove('selected')
@@ -271,6 +273,16 @@ function newList(mdNames, updates, path, f) {
 	return key
 }
 
+async function newFile() {
+	const f = prompt('new file name')
+	if (!f) return;
+	if (fileList.isExist(f)) return alert('alredy exist') // todo? renew?
+	// TODO extract .selected if any (see old syncNewFile)
+	await save('/', {
+		[`map/index/${f}`]: 1,
+		[`map/ls/${f}/ls/${Date.now()}`]: { name: '__' + f }
+	});
+}
 
 function editCredentials(error = '') {
 	document.body.innerHTML = `<p>${error}</p>`;
