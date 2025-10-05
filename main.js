@@ -56,7 +56,14 @@ async function connect(name) {
 
 async function save(path, updates) {
 	const spin = document.body.appendChild(html.div({ className: 'spin' }))
-	await put(path, updates).finally(() => spin.remove());
+	const fs = tool.editorFieldset
+	if (fs) fs.disabled = true;
+	try {
+		await put(path, updates)
+	} finally {
+		spin.remove()
+		if (fs) fs.disabled = false;
+	}
 }
 
 
@@ -118,6 +125,9 @@ function makeEditor() {
 	};
 	const url = html.input({ name: 'url', placeholder: 'url', className: 'wide', hidden: true })
 	const hot = html.input({ name: 'hot', type: 'date', hidden: true })
+	const rm = html.button({ class: 'rm', onclick: saveRm }, 'remove')
+	const reset = html.button({ type: 'reset' }, 'reset')
+	tool.editorFieldset = html.fieldset({ class: 'all' }, name, url, hot, rm, reset)
 	tool.editor = html.form({
 		name: 'editor',
 		className: 'wide',
@@ -125,7 +135,7 @@ function makeEditor() {
 			url.hidden = hot.hidden = !name.value;
 			tool.action.onchange()
 		}
-	}, name, url, hot)
+	}, tool.editorFieldset)
 	tool.el.prepend(tool.editor)
 }
 
@@ -170,9 +180,8 @@ function selectForEditOrSkip(target) {
 }
 
 async function saveEdit() {
-	const s = document.querySelector('.selected') // TODO? tree.selected
+	const s = document.querySelector('.tree .selected') // TODO? tree.selected
 	if (!s) return;
-	if (!getComputedStyle(s).getPropertyValue('--file')) return; // TODO incapsulate
 	const { path } = tree.getNode(s)
 	const { name, url, hot } = tool.editor;
 	// todo only changed, if no change return
@@ -184,6 +193,17 @@ async function saveEdit() {
 	s.classList.remove('selected')
 	tool.add.textContent = 'add'
 	tool.editor.reset()
+}
+
+async function saveRm() {
+	const s = document.querySelector('nav.tree .selected') // TODO? tree.selected
+	if (!s) return;
+	const { path, nextPath, i } = tree.getNode(s)
+	const updates = { [path]: null };
+	if (nextPath) updates[`${nextPath}/f`] = i.f || null;
+	await save('/', updates);
+	s.classList.remove('selected')
+	tool.add.textContent = 'add'
 }
 
 function removeAskPlace() {
@@ -283,6 +303,7 @@ async function newFile() {
 		[`map/ls/${f}/ls/${Date.now()}`]: { name: '__' + f }
 	});
 }
+
 
 function editCredentials(error = '') {
 	document.body.innerHTML = `<p>${error}</p>`;

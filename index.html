@@ -41,8 +41,15 @@
       }
     }
     .tool label, .tool button { margin: 0 0.4em }
-    .tool form { overflow: scroll; }
-    .mobile .tool form { max-height: 3em; }
+    .tool form { 
+      overflow: scroll; 
+      .mobile & { max-height: 3em; }
+      fieldset.all { border: 0; padding: 0; margin: 0; }
+      .rm { 
+        display: none;
+        body:has(nav.tree .selected) & { display: inline-block; }
+      }
+    }
     .wide { width: 100% }
 
     .selected { border: 1px dashed; }
