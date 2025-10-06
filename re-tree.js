@@ -1,4 +1,5 @@
-export { reactive } from "../lib/reactive.js"
+import { reactive } from "../lib/reactive.js"
+export { reactive }
 
 const isObject = v => v && typeof v === 'object' && !Array.isArray(v)
 
