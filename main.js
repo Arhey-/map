@@ -1,6 +1,6 @@
 import { html, select } from '../lib/html.js'
 import { init, onChild, onValue, put } from './rdb.js'
-import { ReTree } from './re-tree.js'
+import { reactive, ReTree } from './re-tree.js'
 import { Tree, FileList } from './ui.js'
 import { bookmarklet } from './bookmarklet.js'
 
@@ -10,11 +10,12 @@ const isLoadRefsOnStart = query.has('load-refs');
 const aTarget = query.get('target') || '_blank';
 
 const tree = new Tree(connect, isLoadRefsOnStart, aTarget)
+const fileList = new FileList(aTarget)
+const rxName = reactive('')
 const tool = {
 	get active() { return tool.editor?.name.value || tool.action.value },
 	editor: null, editorFieldset: null,
 };
-const fileList = new FileList(aTarget)
 
 const { rtdbURL } = localStorage;
 if (!rtdbURL) {
@@ -99,7 +100,11 @@ function makeEditor() {
 	}
 	const name = html.textarea({
 		name: 'name',
-		placeholder: 'name or .bkm', className: 'wide', onfocus: () => {
+		placeholder: 'name or .bkm',
+		class: 'wide',
+		rows: 1,
+		oninput() { rxName(this.value) },
+		onfocus() {
 			if (tool.action.value != 'edit') tool.action.value = '';
 			if (!name.value) navigator.clipboard.readText().then(n => {
 				if (n.startsWith('{')) {
@@ -108,21 +113,25 @@ function makeEditor() {
 					navigator.clipboard.writeText('')
 				}
 			})
+		},
+		onchange() {
+			if (name.value == '.bkm') {
+				return void navigator.clipboard
+					.writeText(bookmarklet)
+					.then(() => name.value = '')
+			}
+			if (name.value.startsWith('{"name":"')) {
+				const i = JSON.parse(name.value)
+				name.value = i.name;
+				url.value = i.url;
+			}
+			tool.action.onchange()
 		}
 	})
-	name.onchange = () => {
-		if (name.value == '.bkm') {
-			navigator.clipboard.writeText(bookmarklet).then(() => name.value = '')
-			return;
-		}
-		if (name.value.startsWith('{"name":"')) {
-			const i = JSON.parse(name.value)
-			name.value = i.name;
-			url.value = i.url;
-		}
-		url.hidden = hot.hidden = !name.value;
-		tool.action.onchange()
-	};
+	rxName.map(n => n.includes('\n') ? 2 : 1).watch(r => name.rows = r)
+	rxName.map(n => !!n).watch(hasName => {
+		url.hidden = hot.hidden = reset.hidden = !hasName;
+	})
 	const url = html.input({ name: 'url', placeholder: 'url', className: 'wide', hidden: true })
 	const hot = html.input({ name: 'hot', type: 'date', hidden: true })
 	const rm = html.button({ class: 'rm', onclick: saveRm }, 'remove')
@@ -130,11 +139,8 @@ function makeEditor() {
 	tool.editorFieldset = html.fieldset({ class: 'all' }, name, url, hot, rm, reset)
 	tool.editor = html.form({
 		name: 'editor',
-		className: 'wide',
-		onreset() { 
-			url.hidden = hot.hidden = !name.value;
-			tool.action.onchange()
-		}
+		class: 'wide',
+		onreset() { tool.action.onchange() }
 	}, tool.editorFieldset)
 	tool.el.prepend(tool.editor)
 }
