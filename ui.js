@@ -180,7 +180,8 @@ export class Tree {
 
         const i = $$node.v
         if (i.hot) this.#hot(li, i.hot, ac.signal);
-        if (i.file?.()) return this.#fileNode(li, i.file, i.name);
+        const f = this.#fileNode(li, i.name, i.url || i.file)
+        if (f) return f;
         const title = this.#textOrLink(i.name, i.url, li.classList);
         if (i.ls) return this.#fork(li, title, i.ls, i.fold);
         li.append(title);
@@ -227,22 +228,33 @@ export class Tree {
         liClassList.toggle('google', url.startsWith('https://www.google.com/'))
     }
 
-    // FIXME fileLoader
-    #fileNode(li, $file, $name) {
-        const load = () => this.#load($file, b);
+    #fileNode(li, $name, $urlOrFile) {
+        if (!$urlOrFile) return;
+        const isUrl = $urlOrFile().startsWith('?r=')
+        const href = isUrl ? $urlOrFile : $urlOrFile.map(f => `?r=${f}`)
+        const $ref = isUrl
+            ? $urlOrFile.map(u => new URLSearchParams(u).get('r'))
+            : $urlOrFile;
+
+        const load = () => this.#load($ref(), b);
         const b = html.button(load, 'load');
         if (this.#isLoadRefsAsap) setTimeout(load);
         const target = this.#aTarget
-        const a = html.a({ target, href: `?file=${$file}` }, ' ', Text($name))
-        $file.watch(f => { a.href = `?file=${f}` })
+        const a = html.a({ target, href }, ' ', Text($name))
+        href.watch(url => { 
+            a.href = url
+            if (b.disabled) { 
+                b.closest('li')?.replaceChildren(b, a)
+                b.textContent = 'load'
+                b.disabled = false
+            }
+        })
         li.append(b, a);
         return li
     }
 
-    // TODO live
-    async #load($name, button) {
+    async #load(name, button) {
         button.disabled = true;
-        const name = $name()
         try {
             const rt = await this.#loadRef(name)
             const li = button.parentElement

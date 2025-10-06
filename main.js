@@ -12,7 +12,7 @@ const aTarget = query.get('target') || '_blank';
 const tree = new Tree(connect, isLoadRefsOnStart, aTarget)
 const tool = {
 	get active() { return tool.editor?.name.value || tool.action.value },
-	editor: null,
+	editor: null, editorFieldset: null,
 };
 const fileList = new FileList(aTarget)
 
@@ -21,12 +21,12 @@ if (!rtdbURL) {
 	editCredentials()
 } else try {
 	await init(rtdbURL)
-	const n = query.get('file')
-	if (n) {
-		if (n != 'main') document.title += ` - ${n}`;
-		const root = await connect(n);
+	const r = query.get('file') || query.get('r')
+	if (r) {
+		if (r != 'main') document.title += ` - ${r}`;
+		const root = await connect(r);
 		const nav = document.body.appendChild(html.nav({ class: 'tree' }));
-		nav.append(tree.makeBranch(root, n));
+		nav.append(tree.makeBranch(root, r));
 	}
 	makeTool();
 	document.addEventListener('click', handlePlace); // TODO tree.onClick
