@@ -232,7 +232,7 @@ export class Tree {
         const u = $urlOrFile?.()
         if (!u) return;
         const isUrl = u.startsWith('?r=')
-        if (!isUrl && !/\w+/.test(u)) return;
+        if (!isUrl && !/^\w+$/.test(u)) return;
         const href = isUrl ? $urlOrFile : $urlOrFile.map(f => `?r=${f}`)
         const $ref = isUrl
             ? $urlOrFile.map(u => new URLSearchParams(u).get('r'))
