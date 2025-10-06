@@ -180,7 +180,7 @@ export class Tree {
 
         const i = $$node.v
         if (i.hot) this.#hot(li, i.hot, ac.signal);
-        const f = this.#fileNode(li, i.name, i.url || i.file)
+        const f = this.#fileNode(li, i.name, i.file || i.url)
         if (f) return f;
         const title = this.#textOrLink(i.name, i.url, li.classList);
         if (i.ls) return this.#fork(li, title, i.ls, i.fold);
