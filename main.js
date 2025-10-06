@@ -132,15 +132,19 @@ function makeEditor() {
 	rxName.map(n => !!n).watch(hasName => {
 		url.hidden = hot.hidden = reset.hidden = !hasName;
 	})
-	const url = html.input({ name: 'url', placeholder: 'url', className: 'wide', hidden: true })
-	const hot = html.input({ name: 'hot', type: 'date', hidden: true })
+	const hidden = true
+	const url = html.input({ name: 'url', placeholder: 'url', class: 'wide', hidden})
+	const hot = html.input({ name: 'hot', type: 'date', hidden})
 	const rm = html.button({ class: 'rm', onclick: saveRm }, 'remove')
-	const reset = html.button({ type: 'reset' }, 'reset')
+	const reset = html.button({ type: 'reset', hidden }, 'reset')
 	tool.editorFieldset = html.fieldset({ class: 'all' }, name, url, hot, rm, reset)
 	tool.editor = html.form({
 		name: 'editor',
 		class: 'wide',
-		onreset() { tool.action.onchange() }
+		onreset() { 
+			setTimeout(() => { rxName(name.value) })
+			tool.action.onchange()
+		}
 	}, tool.editorFieldset)
 	tool.el.prepend(tool.editor)
 }
