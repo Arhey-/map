@@ -73,7 +73,10 @@ function makeTool() {
 	action.onchange = () => {
 		document.body.classList.toggle('mode-read', tool.action.value == 'airy')
 		if ('file' == action.value) {
-			newFile().finally(() => action.value = '') // TODO? action.onchange()
+			newFile().finally(() => {
+				action.value = ''
+				action.onchange()
+			})
 		} else if (!action.value) {
 			const s = document.querySelector('.selected')
 			if (!s) return;
@@ -214,6 +217,7 @@ async function saveRm() {
 	await save('/', updates);
 	s.classList.remove('selected')
 	tool.add.textContent = 'add'
+	// leave editor as is to allow quick add after rm
 }
 
 function removeAskPlace() {
@@ -304,10 +308,34 @@ function newList(mdNames, updates, path, f) {
 }
 
 async function newFile() {
-	const f = prompt('new file name')
+	const s = document.querySelector('.tree .selected') // TODO? tree.selected
+	if (!s) return await newBlankFile();
+
+	const { path, i: { name, url, ls } } = tree.getNode(s)
+	if (!ls) return alert('select item with sub list to extract');
+	if (url) {
+		const key = Date.now()
+		Object.values(ls)
+			.find(i => !i.f)
+			.f = key;
+		ls[key] = { name, url }
+	}
+	const f = prompt('new file name', i.name.replace(/\w+/g, '_'))
 	if (!f) return;
-	if (fileList.isExist(f)) return alert('alredy exist') // todo? renew?
-	// TODO extract .selected if any (see old syncNewFile)
+	if (fileList.isExist(f)) return alert('alredy exist');
+	await save('/', {
+		[`map/index/${f}`]: 1,
+		[`map/ls/${f}/ls`]: ls,
+		[`${path}/url`]: `?r=${f}`,
+		[`${path}/fold`]: null,
+		[`${path}/ls`]: null,
+	});
+}
+
+async function newBlankFile() {
+	const f = prompt('new blank file name')
+	if (!f) return;
+	if (fileList.isExist(f)) return alert('alredy exist');
 	await save('/', {
 		[`map/index/${f}`]: 1,
 		[`map/ls/${f}/ls/${Date.now()}`]: { name: '__' + f }

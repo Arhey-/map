@@ -6,6 +6,7 @@ const isObject = v => v && typeof v === 'object' && !Array.isArray(v)
 // TODO EMPTY values
 // TODO on()
 export class ReTree {
+    /** @type {Record<string, Function | ReTree>} */
     #v = {}
     #path = ''
     #onAdd = []
@@ -91,7 +92,7 @@ export class ReTree {
         handlers.push(cb) 
         signal?.addEventListener('abort', () => {
             const i = handlers.indexOf(cb)
-            if (i !== -1) handlers.splice(i, 1)
+            if (i > -1) handlers.splice(i, 1)
         }, { once: true })
     }
     

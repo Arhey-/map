@@ -58,6 +58,7 @@ export class Tree {
     #loadRef = () => { throw new Error('set Tree#loadRef') }
     #isLoadRefsAsap = false
     #aTarget = '_blank'
+    /** @type {Map<HTMLUListElement, import('./re-tree.js').ReTree>} */
     #lsByUl = new Map
 
     constructor(load, isLoadRefsAsap, aTarget) {
@@ -72,7 +73,7 @@ export class Tree {
         return getComputedStyle(el).getPropertyValue('--file')
     }
 
-    getNode(el) {
+    getNode(/** @type {HTMLElement} */ el) {
         const li = el.closest('li')
         const ul = li.closest('ul')
         const { key } = li.dataset
@@ -84,7 +85,7 @@ export class Tree {
         const f = v.f?.()
         return { 
             dir: rt.path, key, path,
-            i: { name, url, hot, f },
+            i: { name, url, hot, f, get ls() { return v.ls?.raw } },
             li,
             get nextPath() {
                 return Object.values(rt.v)
@@ -94,7 +95,12 @@ export class Tree {
         }
     }
 
-    // TODO path for fork
+    /**
+     * TODO path for fork
+     * @param {import('./re-tree.js').ReTree} $$ls
+     * @param {string?} ofFile 
+     * @returns 
+     */
     makeBranch($$ls, ofFile) {
         const { lis, inconsistent } = this.#makeNodes($$ls)
         const ul = html.ul({ class: { inconsistent } }, ...lis)
