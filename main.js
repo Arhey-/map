@@ -138,8 +138,8 @@ function makeEditor() {
 	const hidden = true
 	const url = html.input({ name: 'url', placeholder: 'url', class: 'wide', hidden})
 	const hot = html.input({ name: 'hot', type: 'date', hidden})
-	const _fold = html.input({ name: 'fold', type: 'checkbox', hidden})
-	const fold = html.label(_fold, 'fold')
+	const _fold = html.input({ name: 'fold', type: 'checkbox' })
+	const fold = html.label({ hidden }, _fold, 'fold')
 	const rm = html.button({ class: 'rm', onclick: saveRm }, 'remove')
 	const reset = html.button({ type: 'reset', hidden }, 'reset')
 	tool.editorFieldset = html.fieldset({ class: 'all' }, name, url, hot, fold, rm, reset)
