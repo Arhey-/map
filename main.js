@@ -133,14 +133,16 @@ function makeEditor() {
 	})
 	rxName.map(n => n.includes('\n') ? 2 : 1).watch(r => name.rows = r)
 	rxName.map(n => !!n).watch(hasName => {
-		url.hidden = hot.hidden = reset.hidden = !hasName;
+		url.hidden = hot.hidden = fold.hidden = reset.hidden = !hasName;
 	})
 	const hidden = true
 	const url = html.input({ name: 'url', placeholder: 'url', class: 'wide', hidden})
 	const hot = html.input({ name: 'hot', type: 'date', hidden})
+	const fold = html.input({ name: 'fold', type: 'checkbox', hidden})
+	const lFold = html.label(fold, 'fold')
 	const rm = html.button({ class: 'rm', onclick: saveRm }, 'remove')
 	const reset = html.button({ type: 'reset', hidden }, 'reset')
-	tool.editorFieldset = html.fieldset({ class: 'all' }, name, url, hot, rm, reset)
+	tool.editorFieldset = html.fieldset({ class: 'all' }, name, url, hot, lFold, rm, reset)
 	tool.editor = html.form({
 		name: 'editor',
 		class: 'wide',
@@ -188,6 +190,7 @@ function selectForEditOrSkip(target) {
 	editor.name.value = i.name || '';
 	editor.url.value = i.url || '';
 	if (i.hot) editor.hot.valueAsNumber = i.hot;
+	editor.fold.value = !!i.fold;
 	tool.add.textContent = 'apply'
 	editor.name.onchange()
 }
@@ -196,12 +199,13 @@ async function saveEdit() {
 	const s = document.querySelector('.tree .selected') // TODO? tree.selected
 	if (!s) return;
 	const { path } = tree.getNode(s)
-	const { name, url, hot } = tool.editor;
+	const { name, url, hot, fold } = tool.editor;
 	// todo only changed, if no change return
 	await save(path, {
 		name: name.value || null,
 		url: url.value || null,
 		hot: hot.valueAsNumber || null,
+		fold: fold.value || null,
 	});
 	s.classList.remove('selected')
 	tool.add.textContent = 'add'

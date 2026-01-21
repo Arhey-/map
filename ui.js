@@ -82,10 +82,11 @@ export class Tree {
         const name = v.name()
         const url = v.url?.()
         const hot = v.hot?.()
+        const fold = v.fold?.()
         const f = v.f?.()
         return { 
             dir: rt.path, key, path,
-            i: { name, url, hot, f, get ls() { return v.ls?.raw } },
+            i: { name, url, hot, fold, f, get ls() { return v.ls?.raw } },
             li,
             get nextPath() {
                 return Object.values(rt.v)
