@@ -320,7 +320,7 @@ async function newFile() {
 			.f = key;
 		ls[key] = { name, url }
 	}
-	const f = prompt('new file name', i.name.replace(/\w+/g, '_'))
+	const f = prompt('new file name', name.replace(/\W+/g, '_'))
 	if (!f) return;
 	if (fileList.isExist(f)) return alert('alredy exist');
 	await save('/', {
