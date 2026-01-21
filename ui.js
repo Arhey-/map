@@ -186,7 +186,7 @@ export class Tree {
         $$node.onRm(renew, ac.signal)
 
         const i = $$node.v
-        if (i.hot) this.#hot(li, i.hot, ac.signal);
+        if (i.hot) this.#hot(li.classList, i.hot, ac.signal);
         const f = this.#fileNode(li, i.name, i.file || i.url)
         if (f) return f;
         const title = this.#textOrLink(i.name, i.url, li.classList);
@@ -195,19 +195,16 @@ export class Tree {
         return li
     }
 
-    #hot(li, $hot, signal) {
+    #hot(liClassList, $hot, signal) {
         let t
         const up = hot => {
             clearTimeout(t)
-            if (hot) {
-                if (hot < Date.now()) li.classList.add('hot');
-                else t = setTimeout(
-                    () => li.classList.add('hot'),
-                    Math.min(hot - Date.now(), 2 ** 31 - 1)
-                );
-            } else {
-                li.classList.remove('hot')
-            }
+            const isHotNow = hot && hot < Date.now()
+            liClassList.toggle('hot', isHotNow);
+            if (hot && !isHotNow) t = setTimeout(
+                () => up($hot()),
+                Math.min(hot - Date.now(), 2 ** 31 - 1)
+            );
         }
         up($hot())
         $hot.watch(up, signal)
