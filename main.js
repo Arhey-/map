@@ -4,8 +4,8 @@ import { reactive, ReTree } from './re-tree.js'
 import { Tree, FileList } from './ui.js'
 
 const ua = navigator.userAgent;
-const isPad = ua.includes('iPad');
 const isMobile = ua.includes('obile');
+const isPad = ua.includes('Macintosh') && 'ontouchend' in document;
 const query = new URL(location).searchParams;
 const isLoadRefsOnStart = query.has('load-refs');
 const aTarget = query.get('target') || '_blank';
