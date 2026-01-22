@@ -2,9 +2,10 @@ import { html, select } from '../lib/html.js'
 import { init, onChild, onValue, put } from './rdb.js'
 import { reactive, ReTree } from './re-tree.js'
 import { Tree, FileList } from './ui.js'
-import { bookmarklet } from './bookmarklet.js'
 
-const isMobile = navigator.userAgent.includes('obile');
+const ua = navigator.userAgent;
+const isPad = ua.includes('iPad');
+const isMobile = ua.includes('obile');
 const query = new URL(location).searchParams;
 const isLoadRefsOnStart = query.has('load-refs');
 const aTarget = query.get('target') || '_blank';
@@ -107,28 +108,33 @@ function makeEditor() {
 		class: 'wide',
 		rows: 1,
 		oninput() { rxName(this.value) },
-		onfocus() {
+		async onfocus() {
 			if (tool.action.value != 'edit') tool.action.value = '';
-			if (!name.value) navigator.clipboard.readText().then(n => {
-				if (n.startsWith('{')) {
-					name.value = n
-					name.onchange()
-					navigator.clipboard.writeText('')
-				}
-			})
-		},
-		onchange() {
-			if (name.value == '.bkm') {
-				return void navigator.clipboard
-					.writeText(bookmarklet)
-					.then(() => name.value = '')
+			if (name.value) return;
+			const n = await navigator.clipboard.readText()
+			if (n[0] == '{') {
+				name.value = n
+				name.onchange()
+				navigator.clipboard.writeText('')
+			} else if (isPad) {
+				if(/^https?:\/\//.test(n)) {
+					name.value = n.replace(/^https?:\/\//, '').replace(/\/?\s*$/, '')
+					url.value = n.replace(/^https:/, '')
+				} else name.value = n;
+				rxName(name.value)
 			}
-			if (name.value.startsWith('{"name":"')) {
+		},
+		async onchange() {
+			if (name.value == '.bkm') {
+				const { bookmarklet } = await import('./bookmarklet.js')
+				await navigator.clipboard.writeText(bookmarklet)
+				name.value = ''
+			} else if (name.value.startsWith('{"name":"')) {
 				const i = JSON.parse(name.value)
 				name.value = i.name;
 				url.value = i.url;
 			}
-			tool.action.onchange()
+			rxName(name.value)
 		}
 	})
 	rxName.map(n => n.includes('\n') ? 2 : 1).watch(r => name.rows = r)
@@ -350,16 +356,16 @@ async function newBlankFile() {
 function editCredentials(error = '') {
 	document.body.innerHTML = `<p>${error}</p>`;
 	document.body.append(
-		input('rtdbURL', rtdbURL),
+		persistInput('rtdbURL', rtdbURL),
 		html.p('enter correct creds and reload')
 	);
 }
 
-function input(name, value = '') {
+function persistInput(name, value = '') {
 	const i = html.input({
 		type: 'text',
 		value,
-		onchange: () => localStorage.setItem(name, i.value),
+		onchange() { localStorage.setItem(name, i.value) },
 	});
 	return html.p(html.label(name, i));
 }
