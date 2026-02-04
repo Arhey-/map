@@ -9,13 +9,20 @@
 		body {
 			margin: 0;
 			display: flex;
+			gap: 1px;
 			background-color: #111;
+		}
+
+		.col {
+			display: flex;
+			flex-direction: column;
+			gap: 1px;
 		}
 
 		iframe {
 			border: 0;
-			margin: 0 1px;
 			flex-grow: 1;
+			resize: vertical;
 		}
 	</style>
 </head>
@@ -38,13 +45,18 @@
 		}
 
 		for (let i = 3; i < 9; i++) {
-			const n = q.get(`v${i}`)
-			if (!n) break;
-			document.title += ` - ${n}`
-			const f = document.createElement('iframe')
-			f.name = `v${i}`
-			f.src = '/map/?file=' + n;
-			document.body.append(f)
+			const names = q.getAll(`v${i}`)
+			if (!names.length) break;
+			document.title += ` - ${names}`
+			const col = document.createElement('div')
+			col.className = 'col'
+			for (const n of names) {
+				const f = document.createElement('iframe')
+				f.name = `v${i}` // don't use target for more than 1 in col
+				f.src = '/map/?file=' + n;
+				col.append(f)
+			}
+			document.body.append(col)
 		}
 	</script>
 </body>
